@@ -14,6 +14,7 @@ const userTourRoutes = require('./routes/userTour-routes')
 const counterRoutes = require('./routes/counter-routes')
 const likeRoutes = require('./routes/like-routes')
 const hotSpotIconRoutes = require('./routes/hotSpotIcon-routes')
+const gatewayrouter = require('./routes/gatewayrouter')
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
 
@@ -56,6 +57,7 @@ app.use('/api/usertours', userTourRoutes)
 app.use('/api/counter', counterRoutes)
 app.use('/api/like',likeRoutes)
 app.use('/api/icons',hotSpotIconRoutes)
+app.use('/api/gateway',gatewayrouter)
 
 app.use(express.static(path.join(__dirname,'client', 'build')));
 //serve static assets if in production
