@@ -1,6 +1,9 @@
 var unirest = require('unirest');
 const User = require('../models/user')
 const _ = require("lodash")
+const niceInvoice = require("nice-invoice")
+const fs =require ("fs")
+const path = require('path')
 
 const payment = async (req, response) => {
      
@@ -14,7 +17,7 @@ const payment = async (req, response) => {
 
           }else{
             const obj = {
-                 isSubscribed:  true
+                 isSubscribed:  !true
               }
                user = _.extend(user,obj)
                user.save((err,result)=>{
@@ -55,6 +58,7 @@ const payment = async (req, response) => {
                        const obj = {
                         totalbill: body.response.total,
                         streetAdress:body.response.billingAddr.addrLine1,
+                        state:body.response.billingAddr.state,
                         city:body.response.billingAddr.city,
                         country:body.response.billingAddr.country,
                         postalcode:body.response.billingAddr.zipCode,
@@ -80,5 +84,60 @@ const payment = async (req, response) => {
         })
  }
 
+ const invoice = async (req,res)=>{
+  const _id = req.params.uid
+  User.findOne({_id},(err,user)=>{
+    if(err || !user){
+       return response.status(400).json({error:"user with this email doesnot exist"})
+      }
+       console.log(user)
+      d = new Date()
+    const invoiceDetail = {
+      shipping: {
+        name: user.username,
+        address: user.streetAdress,
+        city: user.city,
+        state: user.state,
+        country: user.country,
+        postal_code: user.postalcode
+      },
+      items: [
+        {
+          item: "Subscription ",
+          description: "Premium plan of month",
+          quantity: 1,
+          price: parseInt(user.totalbill) , 
+          tax: "0%"
+        }
+
+        
+      ],
+      subtotal: parseInt(user.totalbill),
+      total: parseInt(user.totalbill),
+      order_number: parseInt(user.transactionno),
+      header:{
+          company_name: "WalkinBack",
+          company_logo: "",
+          company_address: "www.walkinBack.com"
+      },
+      footer:{
+        text: "please make the check payable to the company name"
+      },
+      currency_symbol:"$", 
+      date: {
+        billing_date: `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`,
+        due_date: `${d.getDate()+15}/${d.getMonth()+1}/${d.getFullYear()}`,
+      }
+  };
+    niceInvoice(invoiceDetail, 'your-invoice.pdf')
+    // var data =fs.readFileSync('./your-invoice.pdf');
+    //  res.contentType("application/pdf");
+    //   res.send(data);
+     res.send("successfully generate invoice")
+
+    })
+
+ }
  
+exports.invoice=invoice
 exports.payment=payment
