@@ -1,8 +1,9 @@
-const express = require ("express")
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
 
-const cntrlr = require ('../controllers/gatwayController')
+const controller = require('../controllers/gatwayController');
 
-router.post('/payment',cntrlr.payment)
+router.post('/payment', controller.payment);
+router.post('/unsub', controller.unsubscribe);
 
-module.exports = router
+module.exports = router;

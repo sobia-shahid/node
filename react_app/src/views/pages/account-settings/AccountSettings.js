@@ -1,34 +1,26 @@
-import React from "react";
-import {
-  TabContent,
-  TabPane,
-  Nav,
-  NavItem,
-  NavLink,
-  Card,
-  CardBody,
-} from "reactstrap";
-import classnames from "classnames";
-import { Settings, Lock, Info, Instagram, Link, Bell } from "react-feather";
-import GeneralTab from "./General";
-import ChangePassword from "./ChangePassword";
-import InfoTab from "./Info";
-import SocialLinks from "./SocialLinks";
-import Connection from "./Connection";
-import Notifications from "./Notifications";
-import Breadcrumbs from "../../../components/@vuexy/breadCrumbs/BreadCrumb";
+import React from 'react';
+import { TabContent, TabPane, Nav, NavItem, NavLink, Card, CardBody } from 'reactstrap';
+import classnames from 'classnames';
+import { Settings, Lock, Info, Instagram, Link, Bell } from 'react-feather';
+import GeneralTab from './General';
+import ChangePassword from './ChangePassword';
+import InfoTab from './Info';
+import SocialLinks from './SocialLinks';
+import Connection from './Connection';
+import Notifications from './Notifications';
+import Breadcrumbs from '../../../components/@vuexy/breadCrumbs/BreadCrumb';
 
-import "../../../assets/scss/pages/account-settings.scss";
+import '../../../assets/scss/pages/account-settings.scss';
 
 class AccountSettings extends React.Component {
   state = {
-    activeTab: "1",
-    windowWidth: null,
+    activeTab: '1',
+    windowWidth: null
   };
 
   toggle = (tab) => {
     this.setState({
-      activeTab: tab,
+      activeTab: tab
     });
   };
 
@@ -39,7 +31,7 @@ class AccountSettings extends React.Component {
   componentDidMount() {
     if (window !== undefined) {
       this.updateWidth();
-      window.addEventListener("resize", this.updateWidth);
+      window.addEventListener('resize', this.updateWidth);
     }
   }
 
@@ -52,70 +44,58 @@ class AccountSettings extends React.Component {
           breadCrumbParent="Dashboard"
           breadCrumbActive="Account Settings"
         />
-        <div
-          className={`${
-            windowWidth >= 769 ? "nav-vertical" : "account-setting-wrapper"
-          }`}
-        >
+        <div className={`${windowWidth >= 769 ? 'nav-vertical' : 'account-setting-wrapper'}`}>
           <Nav className="account-settings-tab nav-left mr-0 mr-sm-3" tabs>
             <NavItem>
               <NavLink
                 className={classnames({
-                  active: this.state.activeTab === "1",
+                  active: this.state.activeTab === '1'
                 })}
                 onClick={() => {
-                  this.toggle("1");
+                  this.toggle('1');
                 }}
               >
                 <Settings size={16} />
-                <span className="d-md-inline-block d-none align-middle ml-1">
-                  General
-                </span>
+                <span className="d-md-inline-block d-none align-middle ml-1">General</span>
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
                 className={classnames({
-                  active: this.state.activeTab === "2",
+                  active: this.state.activeTab === '2'
                 })}
                 onClick={() => {
-                  this.toggle("2");
+                  this.toggle('2');
                 }}
               >
                 <Lock size={16} />
-                <span className="d-md-inline-block d-none align-middle ml-1">
-                  Change Password
-                </span>
+                <span className="d-md-inline-block d-none align-middle ml-1">Change Password</span>
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
                 className={classnames({
-                  active: this.state.activeTab === "3",
+                  active: this.state.activeTab === '3'
                 })}
                 onClick={() => {
-                  this.toggle("3");
+                  this.toggle('3');
                 }}
               >
                 <Info size={16} />
-                <span className="d-md-inline-block d-none align-middle ml-1">
-                  Info
-                </span>
+                <span className="d-md-inline-block d-none align-middle ml-1">Info</span>
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
                 className={classnames({
-                  active: this.state.activeTab === "4",
+                  active: this.state.activeTab === '4'
                 })}
                 onClick={() => {
-                  this.toggle("4");
+                  this.toggle('4');
                 }}
               >
                 <Instagram size={16} />
-                <span className="d-md-inline-block d-none align-middle ml-1">
-                  Social Links
-                </span>
+                <span className="d-md-inline-block d-none align-middle ml-1">Social Links</span>
               </NavLink>
             </NavItem>
           </Nav>

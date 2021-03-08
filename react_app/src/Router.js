@@ -1,7 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 import { Router, Switch, Route } from 'react-router-dom';
-import { history } from './history';
 import { connect } from 'react-redux';
+import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
+import blue from '@material-ui/core/colors/blue';
+
+import { history } from './history';
 import { UserContext } from '../src/360/context/user';
 import Spinner from './components/@vuexy/spinner/Loading-spinner';
 import { ContextLayout } from './utility/context/Layout';
@@ -16,8 +19,7 @@ import BasicHeader from '../src/360/Components/Header';
 import Virtual from './views/pages/VirtualTour';
 import EditHotSpot from '../src/360/Pages/EditHotSpot';
 import BasicContact from '../src/360/Pages/Contact';
-import { createMuiTheme, MuiThemeProvider } from '@material-ui/core/styles';
-import blue from '@material-ui/core/colors/blue';
+
 function Routersecond() {
   const { user, userLogin, userLogout, alert, showAlert, hideAlert } = React.useContext(UserContext);
   const login = lazy(() => import('./views/pages/authentication/login/Login'));
@@ -103,10 +105,6 @@ function Routersecond() {
           <AppRoute exact path="/forgot">
             <HeaderTranspernat />
             <ForgotPassword />
-          </AppRoute>
-          <AppRoute exact path="/new-password/:token">
-            <HeaderTranspernat />
-            <Login />
           </AppRoute>
 
           <AppRoute exact path="/alltours">

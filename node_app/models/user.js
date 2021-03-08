@@ -28,7 +28,7 @@ userSchema.add({streetAdress: { type:String, required: false ,default: ''}})
 userSchema.add({city: { type:String, required: false ,default: ''}})
 userSchema.add({country: { type:String, required: false ,default: ''}})
 userSchema.add({postalcode: { type:String, required: false ,default: ''}})
-userSchema.add({transactionno: { type:String, required: false ,default: ''}})
+userSchema.add({transactionNo: { type:String, required: false ,default: ''}})
 
 module.exports = mongoose.model("User", userSchema);
 //mongoose.model('User').schema.add({restlink:{data:String, default: ''}})
