@@ -14,7 +14,7 @@ const payment = async (req, response) => {
 
           }else{
             const obj = {
-                 isSubscribed: true
+                 isSubscribed:  true
               }
                user = _.extend(user,obj)
                user.save((err,result)=>{
@@ -49,7 +49,29 @@ const payment = async (req, response) => {
                       });
                     })
                     }
-                    getsubscription() .then((body) => console.log("success", body.response.responseMsg)).catch((error) => 
+                    getsubscription() .then((body) =>{
+                       console.log("success", body.response.responseMsg)
+                       console.log(body.response.total)
+                       const obj = {
+                        totalbill: body.response.total,
+                        streetAdress:body.response.billingAddr.addrLine1,
+                        city:body.response.billingAddr.city,
+                        country:body.response.billingAddr.country,
+                        postalcode:body.response.billingAddr.zipCode,
+                        transactionno:body.response.transactionId
+                     }
+                      user = _.extend(user,obj)
+                      user.save((err,result)=>{
+                        if(err){
+                          //res.status(401).send("cant able to set password  ")
+                          console.log(err)
+                          return response.status(400).json({error:"cant save invoice data in db"})
+                      }
+                      return response.status(200).json({message:body.response.responseMsg})
+                      })
+
+                      })
+                      .catch((error) => 
                       console.log("error", error))
                }
             })

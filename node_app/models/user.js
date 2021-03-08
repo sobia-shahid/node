@@ -23,6 +23,12 @@ userSchema.plugin(uniqueValidator);
 
 userSchema.add({restlink:{data:String, default: ''}})
 userSchema.add({isSubscribed: { type: Boolean, required: false,default:false }})
- 
+userSchema.add({totalbill: { type:String, required: false ,default: '0'}})
+userSchema.add({streetAdress: { type:String, required: false ,default: ''}})
+userSchema.add({city: { type:String, required: false ,default: ''}})
+userSchema.add({country: { type:String, required: false ,default: ''}})
+userSchema.add({postalcode: { type:String, required: false ,default: ''}})
+userSchema.add({transactionno: { type:String, required: false ,default: ''}})
+
 module.exports = mongoose.model("User", userSchema);
 //mongoose.model('User').schema.add({restlink:{data:String, default: ''}})
