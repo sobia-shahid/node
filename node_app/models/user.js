@@ -22,6 +22,7 @@ const userSchema = new Schema({
 userSchema.plugin(uniqueValidator);
 
 userSchema.add({restlink:{data:String, default: ''}})
+userSchema.add({isSubscribed: { type: Boolean, required: false,default:false }})
  
 module.exports = mongoose.model("User", userSchema);
 //mongoose.model('User').schema.add({restlink:{data:String, default: ''}})
