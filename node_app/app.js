@@ -18,6 +18,7 @@ const gatewayrouter = require('./routes/gatewayrouter')
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
 
+global.__basedir = __dirname;
 app.use(bodyParser.json())
 // app.use((req, res, next) => {
 //   res.setHeader('Access-Control-Allow-Origin', '*')

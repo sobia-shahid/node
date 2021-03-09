@@ -33,7 +33,7 @@ const payment = async (req, response) => {
       return response.status(400).json({ error: 'already have subscription' });
     } else {
       const obj = {
-        isSubscribed: true
+        isSubscribed: false
       };
       user = _.extend(user, obj);
       user.save((err, result) => {
@@ -87,7 +87,8 @@ const payment = async (req, response) => {
                 city: body.response.billingAddr.city,
                 country: body.response.billingAddr.country,
                 postalcode: body.response.billingAddr.zipCode,
-                transactionNo: body.response.transactionId
+                transactionNo: body.response.transactionId,
+                isSubscribed: true
               };
               user = _.extend(user, obj);
               user.save((err, result) => {
@@ -134,7 +135,7 @@ const invoice = async (req, res) => {
       ],
       subtotal: parseInt(user.totalbill),
       total: parseInt(user.totalbill),
-      order_number: parseInt(user.transactionno),
+      order_number: parseInt(user.transactionNo),
       header: {
         company_name: 'WalkinBack',
         company_logo: '',
@@ -149,11 +150,24 @@ const invoice = async (req, res) => {
         due_date: `${d.getDate() + 15}/${d.getMonth() + 1}/${d.getFullYear()}`
       }
     };
-    niceInvoice(invoiceDetail, 'your-invoice.pdf');
+    niceInvoice(invoiceDetail, 'invoice.pdf');
     // var data =fs.readFileSync('./your-invoice.pdf');
     //  res.contentType("application/pdf");
     //   res.send(data);
-    res.send('successfully generate invoice');
+    const imageUrl = 'http://localhost:5000/reciept-download';
+    let filename = __basedir + '/invoice.pdf';
+    fs.link(`${filename}`, imageUrl, (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(400).send(err);
+      } else {
+        console.log('\nHard link created\n');
+        console.log('Contents of the hard link created:');
+        console.log(fs.readFileSync(imageUrl, 'utf8'));
+
+        return res.status(200).send({ url: imageUrl });
+      }
+    });
   });
 };
 exports.payment = payment;
