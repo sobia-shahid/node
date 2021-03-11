@@ -87,23 +87,39 @@ const payment = async (req, res) => {
     });
 };
 
-const cancelSubscription = async (req, res) => {
-  const { email } = req.body;
-  User.findOne({ email }, (err, user) => {
-    if (err || !user) {
-      return res.status(400).json({ error: 'user with this email does not exist.' });
-    }
-    if (!user.isSubscribed) {
-      return res.status(400).json({ error: 'you do not has any subscription.' });
-    }
+ const cancelSubscription = async (req, res) => {
+  const sub_id = req.params.subid;
+  const vender_code = '250775193652';
 
-    user.isSubscribed = false;
-    // user.transactionNo = null;
+  const date = new Date()
+    .toISOString()
+    .replace(/T/, ' ') // replace T with a space
+    .replace(/\..+/, '');
 
-    user.save();
-    return res.status(200).json({ success: 'unsubscribe succesfull.' });
-  });
-};
+  const msg = vender_code.length + vender_code + date.length + date;
+
+  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+  data = hmac.update(msg);
+  hash = data.digest('hex');
+  console.log('hmac : ' + hash);
+
+  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+
+
+  var req = unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}`)
+    .headers({
+      'X-Avangate-Authentication': authHeader,
+      'Content-Type': 'application/json'
+    })
+    .end(function(response) {
+      if (response.error) {
+        console.log(response.error);
+        return res.status(400).json(response.error);
+      }
+      console.log(response.body);
+      return res.status(200).json(response.body);
+    });
+}
 
 //const {token,email} = req.body
 // User.findOne({email},(err,user)=>{
