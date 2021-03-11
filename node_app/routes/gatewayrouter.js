@@ -1,10 +1,12 @@
-const express = require('express');
-const router = express.Router();
+const express = require ("express")
+const router = express.Router()
 
-const controller = require('../controllers/gatwayController');
+const cntrlr = require ('../controllers/gatwayController')
 
-router.post('/payment', controller.payment);
-router.post('/unsub', controller.unsubscribe);
-router.get('/invoice/:uid', controller.invoice);
+router.post('/payment',cntrlr.payment)
+router.get('/invoice/:uid',cntrlr.invoice)
+router.route('/unsub/:subid').delete(cntrlr.unsubscribe)
 
-module.exports = router;
+
+module.exports = router
+
