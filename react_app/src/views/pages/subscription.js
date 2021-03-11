@@ -129,7 +129,7 @@ const PaymentForm = (props) => {
       .then((res) => {
         setUser(subscribed(res.data));
 
-        console.log(subscribed(true));
+        console.log(subscribed(res.data));
 
         swal('Good job!', 'Subscription is successfull!', 'success', {
           button: 'OK',
@@ -150,7 +150,7 @@ const PaymentForm = (props) => {
   const unsubscribeNow = () => {
     setDisable(true);
     axios
-      .post('/api/gateway/unsub', { email: user.user.email })
+      .delete(`/api/gateway/unsub/${user.user.subscriptionId}`)
       .then((res) => {
         setUser(subscribed(false));
 
@@ -163,7 +163,7 @@ const PaymentForm = (props) => {
       })
       .catch((err) => {
         console.log(err);
-        swal('Error!', 'There is Error, Please try again! Check your email...', 'error', {
+        swal('Error!', err.response.data.message, 'error', {
           button: 'OK!',
           timer: 6000
         });
@@ -171,6 +171,7 @@ const PaymentForm = (props) => {
       .finally(() => {
         setDisable(false);
       });
+    console.log(user);
   };
 
   return (

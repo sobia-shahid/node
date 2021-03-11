@@ -5,7 +5,7 @@ const niceInvoice = require('nice-invoice');
 const fs = require('fs');
 var crypto = require('crypto');
 
-const payment = async (req, res) => {
+const subscribe = async (req, res) => {
   const vender_code = '250775193652';
   const { user, card, ExpirationDate } = req.body;
 
@@ -123,6 +123,58 @@ const cancelSubscription = async (req, res) => {
       console.log(response.body);
       return res.status(200).json(response.body);
     });
+};
+
+const getSubscriptionPayments = async (req, res) => {
+  const sub_id = req.params.subid;
+  const vender_code = '250775193652';
+
+  const date = new Date()
+    .toISOString()
+    .replace(/T/, ' ') // replace T with a space
+    .replace(/\..+/, '');
+
+  const msg = vender_code.length + vender_code + date.length + date;
+
+  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+  data = hmac.update(msg);
+  hash = data.digest('hex');
+  console.log('hmac : ' + hash);
+
+  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+
+  var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/payment/`)
+    .headers({
+      'X-Avangate-Authentication': authHeader,
+      'Content-Type': 'application/json'
+    })
+    .end(function(response) {
+      if (response.error) {
+        console.log(response.error);
+        return res.status(400).json(response.error);
+      }
+      console.log(response.body);
+      return res.status(200).json(response);
+    });
+};
+
+const getAuth = (req, res) => {
+  const vender_code = '250775193652';
+
+  const date = new Date()
+    .toISOString()
+    .replace(/T/, ' ') // replace T with a space
+    .replace(/\..+/, '');
+
+  const msg = vender_code.length + vender_code + date.length + date;
+
+  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+  data = hmac.update(msg);
+  hash = data.digest('hex');
+  console.log('hmac : ' + hash);
+
+  authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+  res.status(200).json(authHeader);
 };
 
 //const {token,email} = req.body
@@ -254,6 +306,9 @@ const invoice = async (req, res) => {
     stream.pipe(res);
   });
 };
-exports.payment = payment;
+
+exports.auth = getAuth;
+exports.subscribe = subscribe;
+exports.payments = getSubscriptionPayments;
 exports.unsubscribe = cancelSubscription;
 exports.invoice = invoice;
