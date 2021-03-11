@@ -83,7 +83,7 @@ const payment = async (req, res) => {
     })
     .send(obj)
     .end(function(response) {
-      if (response.error.error_code) {
+      if (response.body.error_code) {
         console.log(response);
         return res.status(400).json(response.body);
       }
@@ -92,7 +92,7 @@ const payment = async (req, res) => {
     });
 };
 
- const cancelSubscription = async (req, res) => {
+const cancelSubscription = async (req, res) => {
   const sub_id = req.params.subid;
   const vender_code = '250775193652';
 
@@ -110,7 +110,6 @@ const payment = async (req, res) => {
 
   const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
 
-
   var req = unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}`)
     .headers({
       'X-Avangate-Authentication': authHeader,
@@ -124,7 +123,7 @@ const payment = async (req, res) => {
       console.log(response.body);
       return res.status(200).json(response.body);
     });
-}
+};
 
 //const {token,email} = req.body
 // User.findOne({email},(err,user)=>{

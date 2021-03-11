@@ -82,7 +82,7 @@ const getCardType = (cardNumber) => {
 const PaymentForm = (props) => {
   const { subscribed } = useContext(UserContext);
   const [ user, setUser ] = useState(useContext(UserContext).user);
-  const { isSubscribed } = user.user;
+  const isSubscribed = user.user.subscriptionId ? true : false;
   const [ disable, setDisable ] = useState(false);
 
   useEffect(() => {
@@ -127,7 +127,7 @@ const PaymentForm = (props) => {
     axios
       .post('/api/gateway/payment', obj)
       .then((res) => {
-        setUser(subscribed(true));
+        setUser(subscribed(res.data));
 
         console.log(subscribed(true));
 
@@ -137,8 +137,7 @@ const PaymentForm = (props) => {
         });
       })
       .catch((err) => {
-        console.log(err);
-        swal('Error!', err.message, 'error', {
+        swal('Error!', err.response.data.message, 'error', {
           button: 'OK!',
           timer: 6000
         });
@@ -628,3 +627,4 @@ const StyledForm = styled.div`
     }
   }
 `;
+// 4111111111111111
