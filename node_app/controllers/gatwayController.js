@@ -6,123 +6,168 @@ const fs = require('fs');
 var crypto = require('crypto');
 
 const subscribe = async (req, res) => {
-  const vender_code = '250775193652';
+ const vender_code = '250775193652';
+  //const {user} = req.body
   const { user, card, ExpirationDate } = req.body;
+    const {Email} = user
+    console.log(Email)
+  User.findOne({email:Email},(err,user)=>{
+         if(err || !user){
+           console.log(err)
+            return res.status(400).json({message:"user with this email doesnot exist"})
+         }
+           if(user.subscriptionId != ""){
+             return res.status(400).json({message:"already have subscription"})
+    
+           }else{
+            const date = new Date()
+            .toISOString()
+            .replace(/T/, ' ') // replace T with a space
+            .replace(/\..+/, '');
+        
+          const msg = vender_code.length + vender_code + date.length + date;
+        
+          const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+          data = hmac.update(msg);
+          hash = data.digest('hex');
+          console.log('hmac : ' + hash);
+        
+          const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`
+          const obj = {
+            CustomPriceBillingCyclesLeft: 2,
+            DeliveryInfo: {
+              Codes: [
+                {
+                  Code: '___TEST___CODE____'
+                }
+              ]
+            },
+            EndUser: user,
+            // EndUser: {
+            //   Address1: 'Test Address',
+            //   Address2: '',
+            //   City: 'LA',
+            //   Company: '', //
+            //   CountryCode: 'us',
+            //   Email: 'customer@2Checkout.com',
+            //   Fax: '', //
+            //   FirstName: 'Customer',
+            //   Language: 'en', //
+            //   LastName: '2Checkout',
+            //   Phone: '',
+            //   State: 'CA',
+            //   Zip: '12345'
+            // },
+            //ExpirationDate: '2015-12-16',
+            ExpirationDate: ExpirationDate,
+            ExternalSubscriptionReference: '12235',
+            NextRenewalPrice: 49.99,
+            NextRenewalPriceCurrency: 'usd',
+            PartnerCode: '',
+            Payment: card,
+            // Payment: {
+            //   CCID: '123',
+            //   CardNumber: '4111111111111111',
+            //   CardType: 'Visa',
+            //   ExpirationMonth: '12',
+            //   ExpirationYear: '2018',
+            //   HolderName: 'John Doe'
+            // },
+            Product: {
+              ProductCode: 'XZXVWTAHH7',
+              ProductId: '34702111',
+              ProductName: '2Checkout Subscription',
+              ProductQuantity: 1,
+              ProductVersion: ''
+            },
+            StartDate: '2015-02-16',
+            SubscriptionValue: 199,
+            SubscriptionValueCurrency: 'usd',
+            Test: 1
+          };
+        
+          unirest('POST', 'https://api.2checkout.com/rest/6.0/subscriptions/')
+            .headers({
+              'X-Avangate-Authentication': authHeader,
+              'Content-Type': 'application/json'
+            })
+            .send(obj)
+            .end(function(response) {
+              if (response.body.error_code) {
+                console.log(response);
+                return res.status(400).json({message:response.body});
+              }
+                else{
+                const obj = {
+                   subscriptionId:response.body
+                             }
+                             user = _.extend(user,obj)
+                             user.save((err,result)=>{
+                               if(err){
+                                 return res.status(400).json({message:"cant able to get subscription"})
+                               }
+                               else{
+                                return res.status(400).json({message:response.body});
+                               }
+                             })
+                 
+              }
+               
+            });
 
-  const date = new Date()
-    .toISOString()
-    .replace(/T/, ' ') // replace T with a space
-    .replace(/\..+/, '');
-
-  const msg = vender_code.length + vender_code + date.length + date;
-
-  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
-  data = hmac.update(msg);
-  hash = data.digest('hex');
-  console.log('hmac : ' + hash);
-
-  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
-
-  const obj = {
-    CustomPriceBillingCyclesLeft: 2,
-    DeliveryInfo: {
-      Codes: [
-        {
-          Code: '___TEST___CODE____'
-        }
-      ]
-    },
-    EndUser: user,
-    // EndUser: {
-    //   Address1: 'Test Address',
-    //   Address2: '',
-    //   City: 'LA',
-    //   Company: '', //
-    //   CountryCode: 'us',
-    //   Email: 'customer@2Checkout.com',
-    //   Fax: '', //
-    //   FirstName: 'Customer',
-    //   Language: 'en', //
-    //   LastName: '2Checkout',
-    //   Phone: '',
-    //   State: 'CA',
-    //   Zip: '12345'
-    // },
-    // ExpirationDate: '2015-12-16',
-    ExpirationDate: ExpirationDate,
-    ExternalSubscriptionReference: '12235',
-    NextRenewalPrice: 49.99,
-    NextRenewalPriceCurrency: 'usd',
-    PartnerCode: '',
-    Payment: card,
-    // Payment: {
-    //   CCID: '123',
-    //   CardNumber: '4111111111111111',
-    //   CardType: 'Visa',
-    //   ExpirationMonth: '12',
-    //   ExpirationYear: '2018',
-    //   HolderName: 'John Doe'
-    // },
-    Product: {
-      ProductCode: 'XZXVWTAHH7',
-      ProductId: '34702111',
-      ProductName: '2Checkout Subscription',
-      ProductQuantity: 1,
-      ProductVersion: ''
-    },
-    StartDate: '2015-02-16',
-    SubscriptionValue: 199,
-    SubscriptionValueCurrency: 'usd',
-    Test: 1
-  };
-
-  unirest('POST', 'https://api.2checkout.com/rest/6.0/subscriptions/')
-    .headers({
-      'X-Avangate-Authentication': authHeader,
-      'Content-Type': 'application/json'
-    })
-    .send(obj)
-    .end(function(response) {
-      if (response.body.error_code) {
-        console.log(response);
-        return res.status(400).json(response.body);
-      }
-      console.log(response.body);
-      return res.status(200).json(response.body);
-    });
+           }
+          })
+     
 };
 
 const cancelSubscription = async (req, res) => {
   const sub_id = req.params.subid;
-  const vender_code = '250775193652';
+   console.log(sub_id)
+  User.findOne({subscriptionId:sub_id},(err,user)=>{
+    if(err){
+      res.status(400).json({message:"subscription  not found"})
+    }
+    else{
+      const vender_code = '250775193652';
 
-  const date = new Date()
-    .toISOString()
-    .replace(/T/, ' ') // replace T with a space
-    .replace(/\..+/, '');
-
-  const msg = vender_code.length + vender_code + date.length + date;
-
-  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
-  data = hmac.update(msg);
-  hash = data.digest('hex');
-  console.log('hmac : ' + hash);
-
-  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
-
-  var req = unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}`)
-    .headers({
-      'X-Avangate-Authentication': authHeader,
-      'Content-Type': 'application/json'
-    })
-    .end(function(response) {
-      if (response.error) {
-        console.log(response.error);
-        return res.status(400).json(response.error);
-      }
-      console.log(response.body);
-      return res.status(200).json(response.body);
-    });
+      const date = new Date()
+        .toISOString()
+        .replace(/T/, ' ') // replace T with a space
+        .replace(/\..+/, '');
+    
+      const msg = vender_code.length + vender_code + date.length + date;
+      console.log(msg)
+    
+      const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+      data = hmac.update(msg);
+      const hash = data.digest('hex');
+      console.log('hmac : ' + hash);
+    
+      const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+      console.log(authHeader)
+    
+      var req = unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/`)
+        .headers({
+          'X-Avangate-Authentication': authHeader,
+          'Content-Type': 'application/json'
+        })
+        .end(function(response) {
+          if (response.error) {
+            console.log(response.error);
+            return res.status(400).json({message:response.error});
+          }
+          else{
+          obj={
+            subscriptionId:""
+          }
+          user=_.extend(user,obj)
+          user.save()
+          console.log(user);
+          return res.status(200).json({message:response.body});
+        }
+        });
+    }
+  })
 };
 
 const getSubscriptionPayments = async (req, res) => {
