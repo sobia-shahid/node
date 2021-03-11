@@ -170,6 +170,34 @@ const invoice = async (req, res) => {
     });
   });
 };
+
+const login = (req, res) => {
+  let now = new Date();
+  let year = now.getUTCFullYear();
+  let month = now.getUTCMonth() + 1;
+  let day = now.getUTCDate();
+  let hour = now.getUTCHours();
+  let minute = now.getUTCMinutes();
+  let second = now.getUTCSeconds();
+  if (month.toString().length == 1) {
+    month = '0' + month;
+  }
+  if (day.toString().length == 1) {
+    day = '0' + day;
+  }
+  if (hour.toString().length == 1) {
+    hour = '0' + hour;
+  }
+  if (minute.toString().length == 1) {
+    minute = '0' + minute;
+  }
+  if (second.toString().length == 1) {
+    second = '0' + second;
+  }
+  var dateTime = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+
+  
+};
 exports.payment = payment;
 exports.unsubscribe = cancelSubscription;
 exports.invoice = invoice;
