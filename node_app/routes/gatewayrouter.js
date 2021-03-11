@@ -5,7 +5,6 @@ const controller = require('../controllers/gatwayController');
 
 router.post('/payment', controller.payment);
 router.post('/unsub', controller.unsubscribe);
-router.post('/payment', controller.payment);
 router.get('/invoice/:uid', controller.invoice);
 
 module.exports = router;

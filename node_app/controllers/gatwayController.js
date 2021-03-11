@@ -3,7 +3,89 @@ const User = require('../models/user');
 const _ = require('lodash');
 const niceInvoice = require('nice-invoice');
 const fs = require('fs');
-const path = require('path');
+var crypto = require('crypto');
+
+const payment = async (req, res) => {
+  const vender_code = '250775193652';
+
+  const date = new Date()
+    .toISOString()
+    .replace(/T/, ' ') // replace T with a space
+    .replace(/\..+/, '');
+
+  const msg = vender_code.length + vender_code + date.length + date;
+
+  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
+  data = hmac.update(msg);
+  hash = data.digest('hex');
+  console.log('hmac : ' + hash);
+
+  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+
+  var req = unirest('POST', 'https://api.2checkout.com/rest/6.0/subscriptions/')
+    .headers({
+      'X-Avangate-Authentication': authHeader,
+      'Content-Type': 'application/json'
+    })
+    .send({
+      CustomPriceBillingCyclesLeft: 2,
+      DeliveryInfo: {
+        Codes: [
+          {
+            Code: '___TEST___CODE____'
+          }
+        ]
+      },
+      EndUser: {
+        Address1: 'Test Address',
+        Address2: '',
+        City: 'LA',
+        Company: '',
+        CountryCode: 'us',
+        Email: 'customer@2Checkout.com',
+        Fax: '',
+        FirstName: 'Customer',
+        Language: 'en',
+        LastName: '2Checkout',
+        Phone: '',
+        State: 'CA',
+        Zip: '12345'
+      },
+      ExpirationDate: '2015-12-16',
+      ExternalSubscriptionReference: 'ThisIsYourUniqueIdentifier123',
+      NextRenewalPrice: 49.99,
+      NextRenewalPriceCurrency: 'usd',
+      PartnerCode: '',
+      Payment: {
+        CCID: '123',
+        CardNumber: '4111111111111111',
+        CardType: 'VISA',
+        ExpirationMonth: '12',
+        ExpirationYear: '2018',
+        HolderName: 'John Doe'
+      },
+      Product: {
+        PriceOptionCodes: '',
+        ProductCode: 'XZXVWTAHH7',
+        ProductId: '34702111',
+        ProductName: '2Checkout Subscription',
+        ProductQuantity: 1,
+        ProductVersion: ''
+      },
+      StartDate: '2015-02-16',
+      SubscriptionValue: 199,
+      SubscriptionValueCurrency: 'usd',
+      Test: 1
+    })
+    .end(function(response) {
+      if (response.error) {
+        console.log(response.error);
+        return res.status(400).json(response.error);
+      }
+      console.log(response.body);
+      return res.status(200).json(response.body);
+    });
+};
 
 const cancelSubscription = async (req, res) => {
   const { email } = req.body;
@@ -23,95 +105,87 @@ const cancelSubscription = async (req, res) => {
   });
 };
 
-const payment = async (req, response) => {
-  const { token, email, billingAddress } = req.body;
-  User.findOne({ email }, (err, user) => {
-    if (err || !user) {
-      return response.status(400).json({ error: 'user with this email doesnot exist' });
-    }
-    if (user.isSubscribed) {
-      return response.status(400).json({ error: 'already have subscription' });
-    } else {
-      const obj = {
-        isSubscribed: false
-      };
-      user = _.extend(user, obj);
-      user.save((err, result) => {
-        if (err) {
-          //res.status(401).send("cant able to set password  ")
-          console.log(err);
-          return response.status(400).json({ error: 'error while doing subscription,please try again!' });
-        } else {
-          function getsubscription() {
-            return new Promise((resolve, reject) => {
-              unirest('POST', 'https://www.2checkout.com/checkout/api/1/250774588373/rs/authService')
-                .headers({
-                  'Content-Type': 'application/json'
-                })
-                .send(
-                  JSON.stringify({
-                    sellerId: '250774588373',
-                    privateKey: '1D4265E2-C887-4145-B6CC-DBD23B49306F',
-                    merchantOrderId: '123',
-                    token: token,
-                    currency: 'USD',
-                    demo: true,
-                    lineItems: [
-                      {
-                        name: 'Package A',
-                        price: 10,
-                        quantity: 1,
-                        type: 'product',
-                        recurrence: '1 Month',
-                        duration: 'Forever'
-                      }
-                    ],
-                    billingAddr: billingAddress
-                  })
-                )
-                .end(function(response) {
-                  if (response.error) {
-                    return reject(response.error);
-                  }
-                  return resolve(response.body);
-                });
-            });
-          }
-          getsubscription()
-            .then((body) => {
-              console.log('success', body.response.responseMsg);
-              console.log(body.response.total);
-              const obj = {
-                totalbill: body.response.total,
-                streetAdress: body.response.billingAddr.addrLine1,
-                city: body.response.billingAddr.city,
-                country: body.response.billingAddr.country,
-                postalcode: body.response.billingAddr.zipCode,
-                transactionNo: body.response.transactionId,
-                isSubscribed: true
-              };
-              user = _.extend(user, obj);
-              user.save((err, result) => {
-                if (err) {
-                  //res.status(401).send("cant able to set password  ")
-                  console.log(err);
-                  return response.status(400).json({ error: 'cant save invoice data in db' });
-                }
-                return response.status(200).json({ message: body.response.responseMsg });
-              });
-            })
-            .catch((error) => console.log('error', error));
-        }
-      });
-    }
-  });
-};
+//const {token,email} = req.body
+// User.findOne({email},(err,user)=>{
+//     if(err || !user){
+//        return response.status(400).json({error:"user with this email doesnot exist"})
+//       }
+//       if(user.isSubscribed){
+//         return response.status(400).json({error:"already have subscription"})
+
+//       }else{
+//         const obj = {
+//              isSubscribed:  !true
+//           }
+//            user = _.extend(user,obj)
+//            user.save((err,result)=>{
+//              if(err){
+//                //res.status(401).send("cant able to set password  ")
+//                console.log(err)
+//                return response.status(400).json({error:"error while doing subscription,please try again!"})
+//            }else{
+//             function getsubscription() {
+//                 return new Promise((resolve, reject) => {
+//                var req = unirest('POST', 'https://www.2checkout.com/checkout/api/1/250774588373/rs/authService')
+//               .headers({
+//                 'Content-Type': 'application/json',
+//                 'Cookie': 'visid_incap_1630256=JxVBp3/bSvm8sQEDjGvX8xt7Q2AAAAAAQUIPAAAAAAA+gMecLFNyG004jIZ/q9Df; incap_ses_1221_1630256=exOkUrpmdhOif0IfQt3xEF57Q2AAAAAARjTtKHxTGztJNq8XsOpP2g=='
+//               })
+//               .send(JSON.stringify({
+//                 "sellerId": "250774588373",
+//                 "privateKey": "1D4265E2-C887-4145-B6CC-DBD23B49306F",
+//                 "merchantOrderId": "123",
+//                 "token":  token,
+//                 "currency": "USD",
+//                 "demo": true,
+//                 "lineItems": [
+//                     {"name": "Package A", "price": 10, "quantity": 1, "type": "product", "recurrence": "1 Month", "duration": "Forever"}  ],
+//                 "billingAddr": {"name": "John Doe", "addrLine1": " village Bharaj P/O Lakhanwal", "city": "Gujrat", "state": "Pubjab", "zipCode": "50700", "country": "Pakistan", "email": "chwasiullah@gmail.com", "phoneNumber": "+923006242851"}
+//                 }))
+//                 .end(function (response) {
+//                     if (response.error) {
+//                       return reject(response.error)
+//                     }
+//                     return resolve(response.body);
+//                   });
+//                 })
+//                 }
+//                 getsubscription() .then((body) =>{
+//                    console.log("success", body.response.responseMsg)
+//                    console.log(body.response.total)
+//                    const obj = {
+//                     totalbill: body.response.total,
+//                     streetAdress:body.response.billingAddr.addrLine1,
+//                     state:body.response.billingAddr.state,
+//                     city:body.response.billingAddr.city,
+//                     country:body.response.billingAddr.country,
+//                     postalcode:body.response.billingAddr.zipCode,
+//                     transactionno:body.response.transactionId
+//                  }
+//                   user = _.extend(user,obj)
+//                   user.save((err,result)=>{
+//                     if(err){
+//                       //res.status(401).send("cant able to set password  ")
+//                       console.log(err)
+//                       return response.status(400).json({error:"cant save invoice data in db"})
+//                   }
+//                   return response.status(200).json({message:body.response.responseMsg})
+//                   })
+
+//                   })
+//                   .catch((error) =>
+//                   console.log("error", error))
+//            }
+//         })
+//       }
+
+//     })
 
 const invoice = async (req, res) => {
   const _id = req.params.uid;
   User.findOne({ _id }, (err, user) => {
     if (err || !user) {
-      return response.status(400).json({ error: 'user with this email doesnot exist' });
+      return response.status(400).json({ error: 'user with this id doesnot exist' });
     }
     console.log(user);
     d = new Date();
@@ -150,53 +224,15 @@ const invoice = async (req, res) => {
         due_date: `${d.getDate() + 15}/${d.getMonth() + 1}/${d.getFullYear()}`
       }
     };
-    niceInvoice(invoiceDetail, 'invoice.pdf');
-    // var data =fs.readFileSync('./your-invoice.pdf');
-    //  res.contentType("application/pdf");
-    //   res.send(data);
-    const imageUrl = 'http://localhost:5000/reciept-download';
-    let filename = __basedir + '/invoice.pdf';
-    fs.link(`${filename}`, imageUrl, (err) => {
-      if (err) {
-        console.log(err);
-        return res.status(400).send(err);
-      } else {
-        console.log('\nHard link created\n');
-        console.log('Contents of the hard link created:');
-        console.log(fs.readFileSync(imageUrl, 'utf8'));
+    niceInvoice(invoiceDetail, 'new-invoice.pdf');
 
-        return res.status(200).send({ url: imageUrl });
-      }
-    });
+    var stream = fs.createReadStream('D:/reacttut/clientwork/node/node_app/new-invoice.pdf');
+    var filename = 'new-invoice.pdf';
+    filename = encodeURIComponent(filename);
+    res.setHeader('Content-disposition', 'inline; filename="' + filename + '"');
+    res.setHeader('Content-type', 'application/pdf');
+    stream.pipe(res);
   });
-};
-
-const login = (req, res) => {
-  let now = new Date();
-  let year = now.getUTCFullYear();
-  let month = now.getUTCMonth() + 1;
-  let day = now.getUTCDate();
-  let hour = now.getUTCHours();
-  let minute = now.getUTCMinutes();
-  let second = now.getUTCSeconds();
-  if (month.toString().length == 1) {
-    month = '0' + month;
-  }
-  if (day.toString().length == 1) {
-    day = '0' + day;
-  }
-  if (hour.toString().length == 1) {
-    hour = '0' + hour;
-  }
-  if (minute.toString().length == 1) {
-    minute = '0' + minute;
-  }
-  if (second.toString().length == 1) {
-    second = '0' + second;
-  }
-  var dateTime = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
-
-  
 };
 exports.payment = payment;
 exports.unsubscribe = cancelSubscription;
