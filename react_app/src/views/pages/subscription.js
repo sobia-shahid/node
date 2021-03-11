@@ -7,12 +7,15 @@ import * as yup from 'yup';
 import { Formik, Field, ErrorMessage } from 'formik';
 import { Button } from 'reactstrap';
 import swal from 'sweetalert';
-import md5 from 'md5';
+import TextField from '@material-ui/core/TextField';
+
+import CustomField from './TextField';
 
 import { UserContext } from '../../360/context/user';
 
 const subscriptionSchema = yup.object({
-  name: yup.string().required('Name is Required.'),
+  firstName: yup.string().required('First Name is Required.'),
+  lastName: yup.string().required('Last Name is Required.'),
   email: yup.string().email('Provide email by which you logged in.').required(),
   address1: yup.string().required(),
   address2: yup.string().required(),
@@ -31,71 +34,49 @@ const subscriptionSchema = yup.object({
     .required(),
   cvv: yup.string().matches('^[0-9]{3,4}$').required(),
   expmonth: yup.string().matches('^(0[1-9]|1[0-2])$').required(),
-  expyear: yup.string().matches('^([0-9]{4}|[0-9]{2})$').required()
+  expyear: yup.string().matches('^([0-9]{4}|[0-9]{2})$').required(),
+  expirationDate: yup.date()
 });
 
-const card = {
-  sellerId: '250774588373',
-  publishableKey: 'D7F46AD2-710F-4B64-9BD2-9A27404159B2',
-  ccNo: '',
-  expMonth: '',
-  expYear: '',
-  cvv: ''
-};
+const getCardType = (cardNumber) => {
+  // visa
+  var re = new RegExp('^4');
+  if (cardNumber.match(re) != null) return 'Visa';
 
-const loginNow = () => {
-  let now = new Date();
-  let year = now.getUTCFullYear();
-  let month = now.getUTCMonth() + 1;
-  let day = now.getUTCDate();
-  let hour = now.getUTCHours();
-  let minute = now.getUTCMinutes();
-  let second = now.getUTCSeconds();
-  if (month.toString().length == 1) {
-    month = '0' + month;
-  }
-  if (day.toString().length == 1) {
-    day = '0' + day;
-  }
-  if (hour.toString().length == 1) {
-    hour = '0' + hour;
-  }
-  if (minute.toString().length == 1) {
-    minute = '0' + minute;
-  }
-  if (second.toString().length == 1) {
-    second = '0' + second;
-  }
-  var date = year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+  // Mastercard
+  // Updated for Mastercard 2017 BINs expansion
+  if (
+    /^(5[1-5][0-9]{14}|2(22[1-9][0-9]{12}|2[3-9][0-9]{13}|[3-6][0-9]{14}|7[0-1][0-9]{13}|720[0-9]{12}))$/.test(
+      cardNumber
+    )
+  )
+    return 'Mastercard';
 
-  const host = 'https://api.2checkout.com/rpc/6.0/';
+  // AMEX
+  re = new RegExp('^3[47]');
+  if (cardNumber.match(re) != null) return 'AMEX';
 
-  const merchantCode = '250773241643';
-  const key = 'v^raibC(So]utOe4)BTN';
+  // Discover
+  re = new RegExp('^(6011|622(12[6-9]|1[3-9][0-9]|[2-8][0-9]{2}|9[0-1][0-9]|92[0-5]|64[4-9])|65)');
+  if (cardNumber.match(re) != null) return 'Discover';
 
-  const str = merchantCode.length + merchantCode + date.length + date;
-  const hash = md5(str, key);
-  const request = window.getRPC_JSON('2.0', 'login', params, i);
+  // Diners
+  re = new RegExp('^36');
+  if (cardNumber.match(re) != null) return 'Diners';
 
-  const i = 1;
-  const params = [];
+  // Diners - Carte Blanche
+  re = new RegExp('^30[0-5]');
+  if (cardNumber.match(re) != null) return 'Diners - Carte Blanche';
 
-  params.push(merchantCode.toString());
-  params.push(date.toString());
-  params.push(hash.toString());
+  // JCB
+  re = new RegExp('^35(2[89]|[3-8][0-9])');
+  if (cardNumber.match(re) != null) return 'JCB';
 
-  axios
-    .post(host, JSON.stringify(request), {
-      crossDomain: true,
-      dataType: 'jsonp',
-      headers: {
-        'content-type': 'application/json',
-        accept: 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    })
-    .then((res) => console.log(res))
-    .catch((err) => console.log(err));
+  // Visa Electron
+  re = new RegExp('^(4026|417500|4508|4844|491(3|7))');
+  if (cardNumber.match(re) != null) return 'Visa Electron';
+
+  return '';
 };
 
 const PaymentForm = (props) => {
@@ -106,71 +87,65 @@ const PaymentForm = (props) => {
 
   useEffect(() => {
     window.TCO.loadPubKey('demo');
-    loginNow();
   }, []);
 
   const formSubmitted = (values) => {
     setDisable(true);
 
-    var payWithCard = (data) => {
-      console.log(data.response.token.token);
+    // console.log(data.response.token.token);
 
-      const obj = {
-        email: values.email,
-        token: data.response.token.token,
-        billingAddress: {
-          name: values.cardName,
-          addrLine1: values.address1,
-          addrLine2: values.address2,
-          city: values.city,
-          state: values.state,
-          zipCode: values.zip,
-          country: values.country,
-          email: values.email,
-          phoneNumber: values.phoneNumber
-        }
-      };
+    const user = {
+      FirstName: values.firstName,
+      LastName: 'Customer',
+      Email: values.email,
+      Address1: values.address1,
+      Address2: values.address2,
+      City: values.city,
+      State: values.state,
+      Zip: values.zip,
+      CountryCode: values.country,
+      Phone: values.phoneNumber,
+      Fax: '', //
+      Language: 'en', //
+      Company: '' //
+    };
+    const card = {
+      CCID: values.cvv,
+      CardNumber: values.cardNo,
+      CardType: getCardType(values.cardNo),
+      ExpirationMonth: values.expmonth,
+      ExpirationYear: values.expyear,
+      HolderName: values.cardName
+    };
+    const obj = {
+      user: user,
+      card: card,
+      ExpirationDate: values.expirationDate
+    };
+    console.log(obj);
 
-      axios
-        .post('/api/gateway/payment', obj)
-        .then((res) => {
-          setUser(subscribed(true));
+    axios
+      .post('/api/gateway/payment', obj)
+      .then((res) => {
+        setUser(subscribed(true));
 
-          console.log(subscribed(true));
+        console.log(subscribed(true));
 
-          swal('Good job!', 'Subscription is successfull!', 'success', {
-            button: 'OK',
-            timer: 6000
-          });
-        })
-        .catch((err) => {
-          console.log(err);
-          swal('Error!', 'There is Error, Please try again! Check your email...', 'error', {
-            button: 'OK!',
-            timer: 6000
-          });
-        })
-        .finally(() => {
-          setDisable(false);
+        swal('Good job!', 'Subscription is successfull!', 'success', {
+          button: 'OK',
+          timer: 6000
         });
-    };
-
-    var error = (error) => {
-      console.log(error);
-    };
-
-    card.ccNo = values.cardNo;
-    card.cvv = values.cvv;
-    card.expMonth = values.expmonth;
-    card.expYear = values.expyear;
-
-    try {
-      window.TCO.requestToken(payWithCard, error, card);
-    } catch (error) {
-      setTimeout(() => {
-        window.TCO.requestToken(payWithCard, error, card);
-      }, 3000);
-    }
+      })
+      .catch((err) => {
+        console.log(err);
+        swal('Error!', 'There is Error, Please try again! Check your email...', 'error', {
+          button: 'OK!',
+          timer: 6000
+        });
+      })
+      .finally(() => {
+        setDisable(false);
+      });
   };
 
   const unsubscribeNow = () => {
@@ -219,7 +194,7 @@ const PaymentForm = (props) => {
                   <div className="container">
                     <Formik
                       initialValues={{
-                        name: '',
+                        firstName: '',
                         email: '',
                         address1: '',
                         address2: '',
@@ -232,7 +207,8 @@ const PaymentForm = (props) => {
                         cvv: '',
                         expmonth: '',
                         expyear: '',
-                        phoneNumber: ''
+                        phoneNumber: '',
+                        expirationDate: ''
                       }}
                       validationSchema={subscriptionSchema}
                       onSubmit={(values, actions) => {
@@ -244,7 +220,51 @@ const PaymentForm = (props) => {
                         <div className="row">
                           <div className="col-50">
                             <h3>Billing Address</h3>
-                            <label for="name">
+                            <CustomField
+                              name={'firstName'}
+                              label={'First Name'}
+                              labelClass={'fa fa-user'}
+                              value={values.firstName}
+                              placeholder="John"
+                              type="text"
+                              className="input"
+                              id="firstName"
+                              name="firstName"
+                              changed={handleChange('firstName')}
+                              blured={handleBlur('firstName')}
+                            />
+                            <CustomField
+                              name={'lastName'}
+                              label={'Last Name'}
+                              labelClass={'fa fa-user'}
+                              value={values.lastName}
+                              placeholder="Doe"
+                              type="text"
+                              className="input"
+                              id="lastName"
+                              name="lastName"
+                              changed={handleChange('lastName')}
+                              blured={handleBlur('lastName')}
+                            />
+                            <Field
+                              component={(props) => (
+                                <TextField
+                                  name="expirationDate"
+                                  id="expirationDate"
+                                  className="input"
+                                  label="Expiration Date"
+                                  type="date"
+                                  onChange={handleChange('expirationDate')}
+                                  onBlur={handleBlur('expirationDate')}
+                                  value={values.expirationDate}
+                                  // className={classes.textField}
+                                  InputLabelProps={{
+                                    shrink: true
+                                  }}
+                                />
+                              )}
+                            />
+                            {/* <label for="name">
                               <i className="fa fa-user" /> Full Name
                             </label>
                             <Field
@@ -257,10 +277,9 @@ const PaymentForm = (props) => {
                               onChange={handleChange('name')}
                               onBlur={handleBlur('name')}
                             />
-                            {/* {errors.name && touched.name ? <div>{errors.name}</div> : null} */}
                             <div className="error">
                               <ErrorMessage name="name" />
-                            </div>
+                            </div> */}
                             <label for="email">
                               <i className="fa fa-envelope" /> Email
                             </label>

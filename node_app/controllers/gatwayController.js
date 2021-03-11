@@ -7,6 +7,7 @@ var crypto = require('crypto');
 
 const payment = async (req, res) => {
   const vender_code = '250775193652';
+  const { user, card, ExpirationDate } = req.body;
 
   const date = new Date()
     .toISOString()
@@ -22,65 +23,69 @@ const payment = async (req, res) => {
 
   const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
 
-  var req = unirest('POST', 'https://api.2checkout.com/rest/6.0/subscriptions/')
+  const obj = {
+    CustomPriceBillingCyclesLeft: 2,
+    DeliveryInfo: {
+      Codes: [
+        {
+          Code: '___TEST___CODE____'
+        }
+      ]
+    },
+    EndUser: user,
+    // EndUser: {
+    //   Address1: 'Test Address',
+    //   Address2: '',
+    //   City: 'LA',
+    //   Company: '', //
+    //   CountryCode: 'us',
+    //   Email: 'customer@2Checkout.com',
+    //   Fax: '', //
+    //   FirstName: 'Customer',
+    //   Language: 'en', //
+    //   LastName: '2Checkout',
+    //   Phone: '',
+    //   State: 'CA',
+    //   Zip: '12345'
+    // },
+    // ExpirationDate: '2015-12-16',
+    ExpirationDate: ExpirationDate,
+    ExternalSubscriptionReference: '12235',
+    NextRenewalPrice: 49.99,
+    NextRenewalPriceCurrency: 'usd',
+    PartnerCode: '',
+    Payment: card,
+    // Payment: {
+    //   CCID: '123',
+    //   CardNumber: '4111111111111111',
+    //   CardType: 'Visa',
+    //   ExpirationMonth: '12',
+    //   ExpirationYear: '2018',
+    //   HolderName: 'John Doe'
+    // },
+    Product: {
+      ProductCode: 'XZXVWTAHH7',
+      ProductId: '34702111',
+      ProductName: '2Checkout Subscription',
+      ProductQuantity: 1,
+      ProductVersion: ''
+    },
+    StartDate: '2015-02-16',
+    SubscriptionValue: 199,
+    SubscriptionValueCurrency: 'usd',
+    Test: 1
+  };
+
+  unirest('POST', 'https://api.2checkout.com/rest/6.0/subscriptions/')
     .headers({
       'X-Avangate-Authentication': authHeader,
       'Content-Type': 'application/json'
     })
-    .send({
-      CustomPriceBillingCyclesLeft: 2,
-      DeliveryInfo: {
-        Codes: [
-          {
-            Code: '___TEST___CODE____'
-          }
-        ]
-      },
-      EndUser: {
-        Address1: 'Test Address',
-        Address2: '',
-        City: 'LA',
-        Company: '',
-        CountryCode: 'us',
-        Email: 'customer@2Checkout.com',
-        Fax: '',
-        FirstName: 'Customer',
-        Language: 'en',
-        LastName: '2Checkout',
-        Phone: '',
-        State: 'CA',
-        Zip: '12345'
-      },
-      ExpirationDate: '2015-12-16',
-      ExternalSubscriptionReference: 'ThisIsYourUniqueIdentifier123',
-      NextRenewalPrice: 49.99,
-      NextRenewalPriceCurrency: 'usd',
-      PartnerCode: '',
-      Payment: {
-        CCID: '123',
-        CardNumber: '4111111111111111',
-        CardType: 'VISA',
-        ExpirationMonth: '12',
-        ExpirationYear: '2018',
-        HolderName: 'John Doe'
-      },
-      Product: {
-        PriceOptionCodes: '',
-        ProductCode: 'XZXVWTAHH7',
-        ProductId: '34702111',
-        ProductName: '2Checkout Subscription',
-        ProductQuantity: 1,
-        ProductVersion: ''
-      },
-      StartDate: '2015-02-16',
-      SubscriptionValue: 199,
-      SubscriptionValueCurrency: 'usd',
-      Test: 1
-    })
+    .send(obj)
     .end(function(response) {
       if (response.error) {
-        console.log(response.error);
-        return res.status(400).json(response.error);
+        console.log(response);
+        return res.status(400).json(response.body);
       }
       console.log(response.body);
       return res.status(200).json(response.body);
