@@ -83,7 +83,7 @@ const payment = async (req, res) => {
     })
     .send(obj)
     .end(function(response) {
-      if (response.error) {
+      if (response.error.error_code) {
         console.log(response);
         return res.status(400).json(response.body);
       }

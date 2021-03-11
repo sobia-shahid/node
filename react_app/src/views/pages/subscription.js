@@ -35,7 +35,7 @@ const subscriptionSchema = yup.object({
   cvv: yup.string().matches('^[0-9]{3,4}$').required(),
   expmonth: yup.string().matches('^(0[1-9]|1[0-2])$').required(),
   expyear: yup.string().matches('^([0-9]{4}|[0-9]{2})$').required(),
-  expirationDate: yup.date()
+  expirationDate: yup.date().required()
 });
 
 const getCardType = (cardNumber) => {
@@ -138,7 +138,7 @@ const PaymentForm = (props) => {
       })
       .catch((err) => {
         console.log(err);
-        swal('Error!', 'There is Error, Please try again! Check your email...', 'error', {
+        swal('Error!', err.message, 'error', {
           button: 'OK!',
           timer: 6000
         });
@@ -247,7 +247,7 @@ const PaymentForm = (props) => {
                               blured={handleBlur('lastName')}
                             />
                             <Field
-                              component={(props) => (
+                              component={() => (
                                 <TextField
                                   name="expirationDate"
                                   id="expirationDate"
@@ -264,6 +264,9 @@ const PaymentForm = (props) => {
                                 />
                               )}
                             />
+                            <div className="error">
+                              <ErrorMessage name="expirationDate" />
+                            </div>
                             {/* <label for="name">
                               <i className="fa fa-user" /> Full Name
                             </label>
