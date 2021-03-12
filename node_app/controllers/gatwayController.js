@@ -22,7 +22,16 @@ const savehistory = async (req, res ) => {
 
 }
  
-
+const gethistory = async (req,res)=>{
+  let users;
+  try {
+    users = await orderHistory.find({});
+  } catch (err) {
+    const error = new HttpError('can not find the users', 5000);
+    return next(error);
+  }
+  res.json(users.map((user) => user.toObject({ getters: true })))
+}
 const subscribe = async (req, res) => {
   const vender_code = '250775193652';
   //const {user} = req.body
@@ -34,6 +43,7 @@ const subscribe = async (req, res) => {
       console.log(err);
       return res.status(400).json({ message: 'user with this email not found.' });
     }
+    console.log(userObj.subscriptionId)
     if (userObj.subscriptionId != '') {
       return res.status(400).json({ message: 'already have subscription' });
     } else {
@@ -84,8 +94,8 @@ const subscribe = async (req, res) => {
         Payment: card,
         // Payment: {
         //   CCID: '123',
-        //   CardNumber: '4111111111111111',
-        //   CardType: 'Visa',
+        //   CardNumber: '3566111111111113',
+        //   CardType: 'JCB',
         //   ExpirationMonth: '12',
         //   ExpirationYear: '2018',
         //   HolderName: 'John Doe'
@@ -136,7 +146,7 @@ const subscribe = async (req, res) => {
 const cancelSubscription = async (req, res) => {
   const sub_id = req.params.subid;
   console.log(sub_id);
-  User.findOne({ subscriptionId: sub_id }, (err, user) => {
+  User.findOne({ subscriptionId: sub_id }, (err, userObj) => {
     if (err) {
       res.status(400).json({ message: 'subscription  not found' });
     } else {
@@ -158,24 +168,26 @@ const cancelSubscription = async (req, res) => {
       const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
       console.log(authHeader);
 
-      unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/`)
+      unirest('DELETE', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}`)
         .headers({
           'X-Avangate-Authentication': authHeader,
           'Content-Type': 'application/json'
         })
         .end(function(response) {
-          if (response.error) {
-            console.log(response.error);
-            return res.status(400).json({ message: response.error });
-          } else {
-            obj = {
-              subscriptionId: ''
-            };
-            user = _.extend(user, obj);
-            user.save();
-            console.log(user);
-            return res.status(200).json({ message: response.body });
-          }
+          console.log(response.body.error_code)
+          
+           if (response.body.error_code) {
+          //   console.log(response.body);
+             return res.status(400).json( response.body );
+           } else {
+           obj = {
+               subscriptionId: ''
+             };
+             userObj = _.extend(userObj, obj);
+             userObj.save();
+             console.log(userObj);
+             return res.status(200).json(response.body);
+           }
         });
     }
   });
@@ -370,3 +382,4 @@ exports.payments = getSubscriptionPayments;
 exports.unsubscribe = cancelSubscription;
 exports.invoice = invoice;
 exports.savehistory=savehistory
+exports.gethistory=gethistory
