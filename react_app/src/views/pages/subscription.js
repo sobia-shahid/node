@@ -16,7 +16,7 @@ import { UserContext } from '../../360/context/user';
 const subscriptionSchema = yup.object({
   firstName: yup.string().required('First Name is Required.'),
   lastName: yup.string().required('Last Name is Required.'),
-  email: yup.string().email('Provide email by which you logged in.').required(),
+  // email: yup.string().email('Provide email by which you logged in.').required(),
   address1: yup.string().required(),
   address2: yup.string().required(),
   country: yup.string().required(),
@@ -94,10 +94,10 @@ const PaymentForm = (props) => {
 
     // console.log(data.response.token.token);
 
-    const user = {
+    const userObj = {
       FirstName: values.firstName,
-      LastName: 'Customer',
-      Email: values.email,
+      LastName: values.lastName,
+      Email: user.user.email,
       Address1: values.address1,
       Address2: values.address2,
       City: values.city,
@@ -118,7 +118,7 @@ const PaymentForm = (props) => {
       HolderName: values.cardName
     };
     const obj = {
-      user: user,
+      user: userObj,
       card: card,
       ExpirationDate: values.expirationDate
     };
@@ -127,7 +127,7 @@ const PaymentForm = (props) => {
     axios
       .post('/api/gateway/payment', obj)
       .then((res) => {
-        setUser(subscribed(res.data));
+        setUser(subscribed(res.data.subscriptionId));
 
         console.log(subscribed(res.data));
 
@@ -137,6 +137,7 @@ const PaymentForm = (props) => {
         });
       })
       .catch((err) => {
+        console.log(err.response.data);
         swal('Error!', err.response.data.message, 'error', {
           button: 'OK!',
           timer: 6000
@@ -152,7 +153,7 @@ const PaymentForm = (props) => {
     axios
       .delete(`/api/gateway/unsub/${user.user.subscriptionId}`)
       .then((res) => {
-        setUser(subscribed(false));
+        setUser(subscribed(''));
 
         // subscribed(false);
         swal('Good job!', 'Unsubscribe is successfull!', 'success', {
@@ -195,7 +196,7 @@ const PaymentForm = (props) => {
                     <Formik
                       initialValues={{
                         firstName: '',
-                        email: '',
+                        // email: '',
                         address1: '',
                         address2: '',
                         country: '',
@@ -283,7 +284,7 @@ const PaymentForm = (props) => {
                             <div className="error">
                               <ErrorMessage name="name" />
                             </div> */}
-                            <label for="email">
+                            {/* <label for="email">
                               <i className="fa fa-envelope" /> Email
                             </label>
                             <Field
@@ -298,7 +299,7 @@ const PaymentForm = (props) => {
                             />
                             <div className="error">
                               <ErrorMessage name="email" />
-                            </div>
+                            </div> */}
                             <label for="phoneNumber">
                               <i className="fa fa-address-card-o" /> Phone Number
                             </label>
@@ -349,7 +350,7 @@ const PaymentForm = (props) => {
                             </div>
 
                             <label for="country">
-                              <i className="fa fa-flag" /> Country
+                              <i className="fa fa-flag" /> Country Code
                             </label>
                             <Field
                               className="input"
