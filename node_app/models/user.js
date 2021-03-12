@@ -25,7 +25,7 @@ const userSchema = new Schema(
 userSchema.plugin(uniqueValidator);
 
 userSchema.add({ restlink: { data: String, default: '' } });
-userSchema.add({ isSubscribed: { type: Boolean, required: false, default: false } });
+userSchema.add({ subscriptionId: { type: String, required: false, default: '' } });
 userSchema.add({ totalbill: { type: String, required: false, default: '0' } });
 userSchema.add({ streetAdress: { type: String, required: false, default: '' } });
 userSchema.add({ city: { type: String, required: false, default: '' } });
