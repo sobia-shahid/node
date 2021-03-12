@@ -143,15 +143,16 @@ const getSubscriptionPayments = async (req, res) => {
 
   const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
 
-  var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/payment/`)
+  // var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/`)
+  var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/renewal/`)
     .headers({
       'X-Avangate-Authentication': authHeader,
       'Content-Type': 'application/json'
     })
     .end(function(response) {
       if (response.error) {
-        console.log(response.error);
-        return res.status(400).json(response.error);
+        console.log(response);
+        return res.status(400).json(response);
       }
       console.log(response.body);
       return res.status(200).json(response);
