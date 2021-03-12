@@ -29,6 +29,7 @@ const getHistory = async (req, res) => {
   }
   res.json(users.map((user) => user.toObject({ getters: true })));
 };
+
 const subscribe = async (req, res) => {
   const vender_code = '250775193652';
   //const {user} = req.body
@@ -41,7 +42,7 @@ const subscribe = async (req, res) => {
       return res.status(400).json({ message: 'user with this email not found.' });
     }
     console.log(userObj.subscriptionId);
-    if (userObj.subscriptionId != '') {
+    if (userObj.subscriptionId != '' && false) {
       return res.status(400).json({ message: 'already have subscription' });
     } else {
       const date = new Date()
@@ -84,7 +85,8 @@ const subscribe = async (req, res) => {
         // },
         //ExpirationDate: '2015-12-16',
         ExpirationDate: ExpirationDate,
-        ExternalSubscriptionReference: '12235',
+        ExternalSubscriptionReference: new Date().getUTCMilliseconds(),
+        // SubscriptionCode: new Date().getUTCMilliseconds(),
         NextRenewalPrice: 49.99,
         NextRenewalPriceCurrency: 'usd',
         PartnerCode: '',
