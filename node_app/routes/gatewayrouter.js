@@ -4,6 +4,7 @@ const router = express.Router();
 const cntrlr = require('../controllers/gatwayController');
 
 router.post('/payment', cntrlr.subscribe);
+router.post('/payment/savehistory', cntrlr.savehistory)
 router.get('/invoice/:uid', cntrlr.invoice);
 router.get('/auth', cntrlr.auth);
 router.route('/unsub/:subid').delete(cntrlr.unsubscribe);
