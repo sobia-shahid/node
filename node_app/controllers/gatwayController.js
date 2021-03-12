@@ -337,7 +337,7 @@ const invoice = async (req, res) => {
     };
     niceInvoice(invoiceDetail, 'new-invoice.pdf');
 
-    var stream = fs.createReadStream('D:/reacttut/clientwork/node/node_app/new-invoice.pdf');
+    var stream = fs.createReadStream(__basedir + '/new-invoice.pdf');
     var filename = 'new-invoice.pdf';
     filename = encodeURIComponent(filename);
     res.setHeader('Content-disposition', 'inline; filename="' + filename + '"');
