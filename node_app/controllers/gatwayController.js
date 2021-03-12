@@ -174,7 +174,7 @@ const cancelSubscription = async (req, res) => {
           'Content-Type': 'application/json'
         })
         .end(function(response) {
-          console.log(response.body.error_code)
+          //console.log(response.body.error_code)
           
            if (response.body.error_code) {
           //   console.log(response.body);
