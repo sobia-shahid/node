@@ -10,7 +10,6 @@ import swal from 'sweetalert';
 import TextField from '@material-ui/core/TextField';
 
 import CustomField from './TextField';
-
 import { UserContext } from '../../360/context/user';
 
 const subscriptionSchema = yup.object({

@@ -1,27 +1,22 @@
 var unirest = require('unirest');
 const User = require('../models/user');
-const orderHistory = require('../models/getOrderHistory')
+const orderHistory = require('../models/getOrderHistory');
 const _ = require('lodash');
 const niceInvoice = require('nice-invoice');
 const fs = require('fs');
 var crypto = require('crypto');
 
-
-const savehistory = async (req, res ) => {
-  const {history} = req.body
-  var hist = new orderHistory(history)
-  hist.save((err,sucess)=>{
-    if (err)
-    {
-      res.status(400).json({message:err})
+const savehistory = async (req, res) => {
+  const { history } = req.body;
+  var hist = new orderHistory(history);
+  hist.save((err, sucess) => {
+    if (err) {
+      res.status(400).json({ message: err });
+    } else {
+      res.status(200).json({ message: sucess });
     }
-    else{
-       res.status(200).json({message:sucess})
-    }
-  })
-
-}
- 
+  });
+};
 
 const subscribe = async (req, res) => {
   const vender_code = '250775193652';
@@ -112,7 +107,7 @@ const subscribe = async (req, res) => {
         .end(function(response) {
           if (response.body.error_code) {
             console.log(response);
-            return res.status(400).json({ message: response.body });
+            return res.status(400).json({ message: response.body.message });
           } else {
             const obj = {
               subscriptionId: response.body
@@ -369,4 +364,4 @@ exports.subscribe = subscribe;
 exports.payments = getSubscriptionPayments;
 exports.unsubscribe = cancelSubscription;
 exports.invoice = invoice;
-exports.savehistory=savehistory
+exports.savehistory = savehistory;
