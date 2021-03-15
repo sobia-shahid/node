@@ -118,7 +118,7 @@ const cancelSubscription = async (req, res) => {
           if (err) {
             return res.status(400).json({ message: 'cant able to cancel subscription' });
           } else {
-            return res.status(200).json( deleted);
+            return res.status(200).json({message:"Sucessfully unsubscribe"});
           }
         });
       }catch (error) {
