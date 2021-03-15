@@ -252,6 +252,7 @@ const getReciept = async (req, res) => {
         customer: userObj.customerId
       });
       return res.status(200).json(subscriptions.data[0].invoice_pdf);
+      
          
       }catch (error) {
         console.log(error)
