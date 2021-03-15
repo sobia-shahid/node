@@ -5,6 +5,9 @@ const _ = require('lodash');
 const niceInvoice = require('nice-invoice');
 const fs = require('fs');
 var crypto = require('crypto');
+const stripe = require('stripe')(
+  'sk_test_51IS74pBMi4SK1isS6vKcgILR9VDl98u5z20rIgLtjjj40wAhKxiihL7L5BzDlfPLiOAjuh94Ow2ak4v7UmONXUIS008kaaBlxD'
+);
 
 const saveHistory = async (req, res) => {
   const history = req.body;
@@ -49,6 +52,7 @@ const subscribe = async (req, res) => {
         .toISOString()
         .replace(/T/, ' ') // replace T with a space
         .replace(/\..+/, '');
+      console.log(date);
 
       const msg = vender_code.length + vender_code + date.length + date;
 
@@ -85,6 +89,7 @@ const subscribe = async (req, res) => {
         // },
         //ExpirationDate: '2015-12-16',
         ExpirationDate: ExpirationDate,
+        NextBillingDate: date.toString(),
         ExternalSubscriptionReference: new Date().getUTCMilliseconds(),
         // SubscriptionCode: new Date().getUTCMilliseconds(),
         NextRenewalPrice: 49.99,
@@ -106,7 +111,7 @@ const subscribe = async (req, res) => {
           ProductQuantity: 1,
           ProductVersion: ''
         },
-        StartDate: '2015-02-16',
+        StartDate: date.toString(),
         SubscriptionValue: 199,
         SubscriptionValueCurrency: 'usd',
         Test: 1
@@ -191,133 +196,120 @@ const cancelSubscription = async (req, res) => {
 };
 
 const getSubscriptionPayments = async (req, res) => {
-  const sub_id = req.params.subid;
-  const vender_code = '250775193652';
+  const subId = req.params.subid;
+  const vendorCode = '250775193652';
 
   const date = new Date()
     .toISOString()
     .replace(/T/, ' ') // replace T with a space
     .replace(/\..+/, '');
 
-  const msg = vender_code.length + vender_code + date.length + date;
+  const msg = vendorCode.length + vendorCode + date.length + date;
 
   const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
   data = hmac.update(msg);
   hash = data.digest('hex');
   console.log('hmac : ' + hash);
 
-  const authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
+  const authHeader = `code="${vendorCode}" date="${date}" hash="${hash}"`;
 
-  // var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/`)
-  var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${sub_id}/history/`)
+  const orderObj = {
+    test: 1,
+    Country: 'us',
+    Currency: 'USD',
+    CustomerIP: '91.220.121.21',
+    ExternalReference: 'REST_API_AVANGTE',
+    Language: 'en',
+    Source: 'testAPI.com',
+    ProductCode: 'XZXVWTAHH7',
+    BillingDetails: {
+      Address1: 'Test Address',
+      City: 'LA',
+      State: 'California',
+      CountryCode: 'US',
+      Email: 'Nodet123@gmail.com',
+      FirstName: 'Customer',
+      LastName: '2Checkout',
+      Zip: '12345'
+    },
+    Items: [
+      {
+        Name: 'Dynamic product',
+        Description: 'Test description',
+        Quantity: 1,
+        IsDynamic: true,
+        Tangible: false,
+        PurchaseType: 'PRODUCT',
+        CrossSell: {
+          CampaignCode: 'CAMPAIGN_CODE',
+          ParentCode: 'MASTER_PRODUCT_CODE'
+        },
+        Price: {
+          Amount: 100,
+          Type: 'CUSTOM'
+        },
+        PriceOptions: [
+          {
+            Name: 'OPT1',
+            Options: [
+              {
+                Name: 'Name LR',
+                Value: 'Value LR',
+                Surcharge: 7
+              }
+            ]
+          }
+        ],
+        RecurringOptions: {
+          CycleLength: 2,
+          CycleUnit: 'DAY',
+          CycleAmount: 12.2,
+          ContractLength: 3,
+          ContractUnit: 'DAY'
+        }
+      }
+    ],
+    PaymentDetails: {
+      Type: 'CC',
+      Currency: 'USD',
+      CustomerIP: '91.220.121.21',
+      PaymentMethod: {
+        CardNumber: '4111111111111111',
+        CardType: 'VISA',
+        // Vendor3DSReturnURL: 'www.success.com',
+        // Vendor3DSCancelURL: 'www.fail.com',
+        ExpirationYear: '2021',
+        ExpirationMonth: '12',
+        CCID: '123',
+        HolderName: 'John Doe',
+        RecurringEnabled: true,
+        HolderNameTime: 1,
+        CardNumberTime: 1
+      }
+    }
+  };
+  unirest('POST', `https://api.2checkout.com/rest/6.0/orders/`)
+    // var req = unirest('GET', `https://api.2checkout.com/rest/6.0/subscriptions/${subId}/`)
     .headers({
       'X-Avangate-Authentication': authHeader,
       'Content-Type': 'application/json'
     })
+    .send(orderObj)
+    // .send({
+    //   ExpirationDate: '2021-11-12',
+    //   NextBillingDate: new Date(),
+    //   RecurringEnabled: true,
+    //   SubscriptionEnabled: true
+    // })
     .end(function(response) {
       if (response.error) {
-        console.log(response);
+        // console.log(response);
         return res.status(400).json(response);
       }
-      console.log(response.body);
+      // console.log(response.body);
       return res.status(200).json(response);
     });
 };
-
-const getAuth = (req, res) => {
-  const vender_code = '250775193652';
-
-  const date = new Date()
-    .toISOString()
-    .replace(/T/, ' ') // replace T with a space
-    .replace(/\..+/, '');
-
-  const msg = vender_code.length + vender_code + date.length + date;
-
-  const hmac = crypto.createHmac('md5', '0~Q?wlT%b#uKRSUiPX!T');
-  data = hmac.update(msg);
-  hash = data.digest('hex');
-  console.log('hmac : ' + hash);
-
-  authHeader = `code="${vender_code}" date="${date}" hash="${hash}"`;
-  res.status(200).json(authHeader);
-};
-
-//const {token,email} = req.body
-// User.findOne({email},(err,user)=>{
-//     if(err || !user){
-//        return response.status(400).json({error:"user with this email doesnot exist"})
-//       }
-//       if(user.isSubscribed){
-//         return response.status(400).json({error:"already have subscription"})
-
-//       }else{
-//         const obj = {
-//              isSubscribed:  !true
-//           }
-//            user = _.extend(user,obj)
-//            user.save((err,result)=>{
-//              if(err){
-//                //res.status(401).send("cant able to set password  ")
-//                console.log(err)
-//                return response.status(400).json({error:"error while doing subscription,please try again!"})
-//            }else{
-//             function getsubscription() {
-//                 return new Promise((resolve, reject) => {
-//                var req = unirest('POST', 'https://www.2checkout.com/checkout/api/1/250774588373/rs/authService')
-//               .headers({
-//                 'Content-Type': 'application/json',
-//                 'Cookie': 'visid_incap_1630256=JxVBp3/bSvm8sQEDjGvX8xt7Q2AAAAAAQUIPAAAAAAA+gMecLFNyG004jIZ/q9Df; incap_ses_1221_1630256=exOkUrpmdhOif0IfQt3xEF57Q2AAAAAARjTtKHxTGztJNq8XsOpP2g=='
-//               })
-//               .send(JSON.stringify({
-//                 "sellerId": "250774588373",
-//                 "privateKey": "1D4265E2-C887-4145-B6CC-DBD23B49306F",
-//                 "merchantOrderId": "123",
-//                 "token":  token,
-//                 "currency": "USD",
-//                 "demo": true,
-//                 "lineItems": [
-//                     {"name": "Package A", "price": 10, "quantity": 1, "type": "product", "recurrence": "1 Month", "duration": "Forever"}  ],
-//                 "billingAddr": {"name": "John Doe", "addrLine1": " village Bharaj P/O Lakhanwal", "city": "Gujrat", "state": "Pubjab", "zipCode": "50700", "country": "Pakistan", "email": "chwasiullah@gmail.com", "phoneNumber": "+923006242851"}
-//                 }))
-//                 .end(function (response) {
-//                     if (response.error) {
-//                       return reject(response.error)
-//                     }
-//                     return resolve(response.body);
-//                   });
-//                 })
-//                 }
-//                 getsubscription() .then((body) =>{
-//                    console.log("success", body.response.responseMsg)
-//                    console.log(body.response.total)
-//                    const obj = {
-//                     totalbill: body.response.total,
-//                     streetAdress:body.response.billingAddr.addrLine1,
-//                     state:body.response.billingAddr.state,
-//                     city:body.response.billingAddr.city,
-//                     country:body.response.billingAddr.country,
-//                     postalcode:body.response.billingAddr.zipCode,
-//                     transactionno:body.response.transactionId
-//                  }
-//                   user = _.extend(user,obj)
-//                   user.save((err,result)=>{
-//                     if(err){
-//                       //res.status(401).send("cant able to set password  ")
-//                       console.log(err)
-//                       return response.status(400).json({error:"cant save invoice data in db"})
-//                   }
-//                   return response.status(200).json({message:body.response.responseMsg})
-//                   })
-
-//                   })
-//                   .catch((error) =>
-//                   console.log("error", error))
-//            }
-//         })
-//       }
-
-//     })
 
 const invoice = async (req, res) => {
   const _id = req.params.uid;
@@ -373,10 +365,72 @@ const invoice = async (req, res) => {
   });
 };
 
-exports.auth = getAuth;
+const subscribeNow = async (req, res) => {
+  try {
+    const paymentMethod = await stripe.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: '4242424242424242',
+        exp_month: 3,
+        exp_year: 2022,
+        cvc: '314'
+      }
+    });
+    console.log(paymentMethod.id);
+
+    const customer = await stripe.customers.create({
+      description: 'My First Test customer'
+      // invoice_settings: { default_payment_method: paymentMethod.id }
+    });
+    console.log(customer.id);
+
+    await stripe.paymentMethods.attach(paymentMethod.id, { customer: customer.id });
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [ { price: 'price_1IS797BMi4SK1isSTxOBKGa5' } ],
+      default_payment_method: paymentMethod.id
+    });
+    console.log(subscription.id);
+
+    return res.status(200).json(subscription);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json(err);
+  }
+};
+
+const unsubscribeNow = async (req, res) => {
+  const subId = req.params.subid;
+
+  try {
+    const deleted = await stripe.subscriptions.del(subId);
+    return res.status(204).json(deleted);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
+const getReciept = async (req, res) => {
+  const customerId = 'cus_J7NYXlnEd4tFBp';
+
+  try {
+    const subscriptions = await stripe.invoices.list({
+      // limit: 10,
+      customer: customerId
+    });
+    return res.status(200).json(subscriptions);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
 exports.subscribe = subscribe;
 exports.payments = getSubscriptionPayments;
-exports.unsubscribe = cancelSubscription;
 exports.invoice = invoice;
 exports.savehistory = saveHistory;
 exports.gethistory = getHistory;
+
+exports.order = subscribeNow;
+exports.unsubscribe = unsubscribeNow;
+exports.reciept = getReciept;

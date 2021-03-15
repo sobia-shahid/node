@@ -14,7 +14,7 @@ const userTourRoutes = require('./routes/userTour-routes')
 const counterRoutes = require('./routes/counter-routes')
 const likeRoutes = require('./routes/like-routes')
 const hotSpotIconRoutes = require('./routes/hotSpotIcon-routes')
-const gatewayrouter = require('./routes/gatewayrouter')
+const gatewayrouter = require('./routes/gateway-router')
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '1'
 
