@@ -136,59 +136,59 @@ const cancelSubscription = async (req, res) => {
 
  
 
-const invoice = async (req, res) => {
-  const _id = req.params.uid;
-  User.findOne({ _id }, (err, user) => {
-    if (err || !user) {
-      return response.status(400).json({ error: 'User with this email not found.' });
-    }
-    console.log(user);
-    d = new Date();
-    const invoiceDetail = {
-      shipping: {
-        name: user.username,
-        address: user.streetAdress,
-        city: user.city,
-        state: user.state,
-        country: user.country,
-        postal_code: user.postalcode
-      },
-      items: [
-        {
-          item: 'Subscription ',
-          description: 'Premium plan of month',
-          quantity: 1,
-          price: parseInt(user.totalbill),
-          tax: '0%'
-        }
-      ],
-      subtotal: parseInt(user.totalbill),
-      total: parseInt(user.totalbill),
-      order_number: parseInt(user.transactionNo),
-      header: {
-        company_name: 'WalkinBack',
-        company_logo: '',
-        company_address: 'www.walkinBack.com'
-      },
-      footer: {
-        text: 'please make the check payable to the company name'
-      },
-      currency_symbol: '$',
-      date: {
-        billing_date: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`,
-        due_date: `${d.getDate() + 15}/${d.getMonth() + 1}/${d.getFullYear()}`
-      }
-    };
-    niceInvoice(invoiceDetail, 'new-invoice.pdf');
+// const invoice = async (req, res) => {
+//   const _id = req.params.uid;
+//   User.findOne({ _id }, (err, user) => {
+//     if (err || !user) {
+//       return response.status(400).json({ error: 'User with this email not found.' });
+//     }
+//     console.log(user);
+//     d = new Date();
+//     const invoiceDetail = {
+//       shipping: {
+//         name: user.username,
+//         address: user.streetAdress,
+//         city: user.city,
+//         state: user.state,
+//         country: user.country,
+//         postal_code: user.postalcode
+//       },
+//       items: [
+//         {
+//           item: 'Subscription ',
+//           description: 'Premium plan of month',
+//           quantity: 1,
+//           price: parseInt(user.totalbill),
+//           tax: '0%'
+//         }
+//       ],
+//       subtotal: parseInt(user.totalbill),
+//       total: parseInt(user.totalbill),
+//       order_number: parseInt(user.transactionNo),
+//       header: {
+//         company_name: 'WalkinBack',
+//         company_logo: '',
+//         company_address: 'www.walkinBack.com'
+//       },
+//       footer: {
+//         text: 'please make the check payable to the company name'
+//       },
+//       currency_symbol: '$',
+//       date: {
+//         billing_date: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`,
+//         due_date: `${d.getDate() + 15}/${d.getMonth() + 1}/${d.getFullYear()}`
+//       }
+//     };
+//     niceInvoice(invoiceDetail, 'new-invoice.pdf');
 
-    var stream = fs.createReadStream(__basedir + '/new-invoice.pdf');
-    var filename = 'new-invoice.pdf';
-    filename = encodeURIComponent(filename);
-    res.setHeader('Content-disposition', 'inline; filename="' + filename + '"');
-    res.setHeader('Content-type', 'application/pdf');
-    stream.pipe(res);
-  });
-};
+//     var stream = fs.createReadStream(__basedir + '/new-invoice.pdf');
+//     var filename = 'new-invoice.pdf';
+//     filename = encodeURIComponent(filename);
+//     res.setHeader('Content-disposition', 'inline; filename="' + filename + '"');
+//     res.setHeader('Content-type', 'application/pdf');
+//     stream.pipe(res);
+//   });
+// };
 
 // const subscribeNow = async (req, res) => {
 //   try {
@@ -237,22 +237,34 @@ const invoice = async (req, res) => {
 // };
 
 const getReciept = async (req, res) => {
-  const customerId = 'cus_J7QY76hNhw4Uo6';
-
-  try {
-    const subscriptions = await stripe.invoices.list({
-      // limit: 10,
-      customer: customerId
-    });
-    return res.status(200).json(subscriptions);
-  } catch (error) {
-    return res.status(400).json(error);
-  }
+  const sub_id = req.params.subid;
+  console.log(sub_id);
+  User.findOne({ subscriptionId: sub_id }, (err, userObj) => {
+    if (err) {
+      res.status(400).json({ message: 'subscription  not found' });
+    } else {
+    // console.log(userObj)
+      (async ()=>{ 
+        console.log(userObj.customerId) 
+      try {
+        const subscriptions = await stripe.invoices.list({
+        // limit: 10,
+        customer: userObj.customerId
+      });
+      return res.status(200).json(subscriptions.data[0].invoice_pdf);
+         
+      }catch (error) {
+        console.log(error)
+        return res.status(400).json(error);
+      }
+    })()     
+          }
+  });
 };
 
 exports.subscribe = subscribe;
 //exports.payments = getSubscriptionPayments;
-exports.invoice = invoice;
+//exports.invoice = invoice;
 exports.savehistory = saveHistory;
 exports.gethistory = getHistory;
 
