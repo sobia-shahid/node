@@ -8,10 +8,10 @@ router.post('/payment/history', controller.savehistory);
 router.get('/payment/history', controller.gethistory);
 router.get('/invoice/:uid', controller.invoice);
 // router.route('/reciept').get(controller.payments);
-router.route('/subscriptions/:subid').get(controller.payments);
+//router.route('/subscriptions/:subid').get(controller.payments);
 
-router.route('/order').post(controller.order);
-router.route('/unsubscribe/:subid').post(controller.unsubscribe);
+//router.route('/order').post(controller.order);
+router.route('/unsubscribe/:subid').post(controller.cancelSubscription);
 router.route('/reciept').get(controller.reciept);
 
 module.exports = router;

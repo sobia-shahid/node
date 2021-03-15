@@ -26,6 +26,7 @@ userSchema.plugin(uniqueValidator);
 
 userSchema.add({ restlink: { data: String, default: '' } });
 userSchema.add({ subscriptionId: { type: String, required: false, default: '' } });
+userSchema.add({ customerId: { type: String, required: false, default: '' } });
 userSchema.add({ totalbill: { type: String, required: false, default: '0' } });
 userSchema.add({ streetAdress: { type: String, required: false, default: '' } });
 userSchema.add({ city: { type: String, required: false, default: '' } });
