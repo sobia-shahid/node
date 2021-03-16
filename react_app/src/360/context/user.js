@@ -19,9 +19,10 @@ export default function UserProvider({ children }) {
     localStorage.removeItem('user');
     console.log('user log out ');
   };
-  const subscribed = (id) => {
+  const subscribed = (subscriptionId, customerId) => {
     const user = JSON.parse(localStorage.getItem('user'));
-    user.user.subscriptionId = id;
+    user.user.subscriptionId = subscriptionId;
+    user.user.customerId = customerId;
     localStorage.setItem('user', JSON.stringify(user));
 
     return user;

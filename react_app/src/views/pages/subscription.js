@@ -13,70 +13,25 @@ import CustomField from './TextField';
 import { UserContext } from '../../360/context/user';
 
 const subscriptionSchema = yup.object({
-  firstName: yup.string().required('First Name is Required.'),
-  lastName: yup.string().required('Last Name is Required.'),
-  // email: yup.string().email('Provide email by which you logged in.').required(),
-  address1: yup.string().required(),
-  address2: yup.string().required(),
-  country: yup.string().required(),
-  city: yup.string().required(),
-  state: yup.string().required(),
-  zip: yup.string().required(),
-  phoneNumber: yup.string().required(),
-  cardName: yup.string().required(),
   cardNo: yup
     .string()
     .matches(
       // Credit card regex validations.
-      '^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11})$'
+      '^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11})$',
+      'You entered invalid card no.'
     )
-    .required(),
-  cvv: yup.string().matches('^[0-9]{3,4}$').required(),
-  expmonth: yup.string().matches('^(0[1-9]|1[0-2])$').required(),
-  expyear: yup.string().matches('^([0-9]{4}|[0-9]{2})$').required(),
-  expirationDate: yup.date().required()
+    .required('Card Number is required.'),
+  cvv: yup.string().matches('^[0-9]{3,4}$', 'CVV do not match to specified format.').required('CVV is required.'),
+  expmonth: yup
+    .string()
+    .matches('^(0[1-9]|1[0-2])$', 'Invalid expiration mongth format.')
+    .required('Expiration Month is required.'),
+  expyear: yup
+    .string()
+    .matches('^([0-9]{4}|[0-9]{2})$', 'Invalid expiration year format.')
+    .required('Expiration Year is required.')
+  // expirationDate: yup.date().required()
 });
-
-const getCardType = (cardNumber) => {
-  // visa
-  var re = new RegExp('^4');
-  if (cardNumber.match(re) != null) return 'Visa';
-
-  // Mastercard
-  // Updated for Mastercard 2017 BINs expansion
-  if (
-    /^(5[1-5][0-9]{14}|2(22[1-9][0-9]{12}|2[3-9][0-9]{13}|[3-6][0-9]{14}|7[0-1][0-9]{13}|720[0-9]{12}))$/.test(
-      cardNumber
-    )
-  )
-    return 'Mastercard';
-
-  // AMEX
-  re = new RegExp('^3[47]');
-  if (cardNumber.match(re) != null) return 'AMEX';
-
-  // Discover
-  re = new RegExp('^(6011|622(12[6-9]|1[3-9][0-9]|[2-8][0-9]{2}|9[0-1][0-9]|92[0-5]|64[4-9])|65)');
-  if (cardNumber.match(re) != null) return 'Discover';
-
-  // Diners
-  re = new RegExp('^36');
-  if (cardNumber.match(re) != null) return 'Diners';
-
-  // Diners - Carte Blanche
-  re = new RegExp('^30[0-5]');
-  if (cardNumber.match(re) != null) return 'Diners - Carte Blanche';
-
-  // JCB
-  re = new RegExp('^35(2[89]|[3-8][0-9])');
-  if (cardNumber.match(re) != null) return 'JCB';
-
-  // Visa Electron
-  re = new RegExp('^(4026|417500|4508|4844|491(3|7))');
-  if (cardNumber.match(re) != null) return 'Visa Electron';
-
-  return '';
-};
 
 const PaymentForm = (props) => {
   const { subscribed } = useContext(UserContext);
@@ -84,51 +39,24 @@ const PaymentForm = (props) => {
   const isSubscribed = user.user.subscriptionId ? true : false;
   const [ disable, setDisable ] = useState(false);
 
-  useEffect(() => {
-    window.TCO.loadPubKey('demo');
-  }, []);
-
   const formSubmitted = (values) => {
+    // demo card
+    // 4242424242424242
     setDisable(true);
-
-    // console.log(data.response.token.token);
-
-    const userObj = {
-      FirstName: values.firstName,
-      LastName: values.lastName,
-      Email: user.user.email,
-      Address1: values.address1,
-      Address2: values.address2,
-      City: values.city,
-      State: values.state,
-      Zip: values.zip,
-      CountryCode: values.country,
-      Phone: values.phoneNumber,
-      Fax: '', //
-      Language: 'en', //
-      Company: '' //
-    };
     const card = {
-      CCID: values.cvv,
-      CardNumber: values.cardNo,
-      CardType: getCardType(values.cardNo),
-      ExpirationMonth: values.expmonth,
-      ExpirationYear: values.expyear,
-      HolderName: values.cardName
+      cvc: values.cvv,
+      cardNo: values.cardNo,
+      expirationMonth: values.expmonth,
+      expirationYear: values.expyear,
+      email: user.user.email
     };
-    const obj = {
-      user: userObj,
-      card: card,
-      ExpirationDate: values.expirationDate
-    };
-    console.log(obj);
+    console.log(card);
 
     axios
-      .post('/api/gateway/payment', obj)
+      .post('/api/gateway/subscribe', card)
       .then((res) => {
-        setUser(subscribed(res.data.subscriptionId));
-
-        console.log(subscribed(res.data));
+        // setting the subscriptionId for user in localStorage
+        setUser(subscribed(res.data.subscriptionId, res.data.customerId));
 
         swal('Good job!', 'Subscription is successfull!', 'success', {
           button: 'OK',
@@ -137,7 +65,7 @@ const PaymentForm = (props) => {
       })
       .catch((err) => {
         console.log(err.response.data);
-        swal('Error!', err.response.data.message, 'error', {
+        swal('Error!', err.response.data.message ? err.response.data.message : 'Something is gone wrong.', 'error', {
           button: 'OK!',
           timer: 6000
         });
@@ -150,9 +78,9 @@ const PaymentForm = (props) => {
   const unsubscribeNow = () => {
     setDisable(true);
     axios
-      .delete(`/api/gateway/unsub/${user.user.subscriptionId}`)
+      .post(`/api/gateway/unsubscribe/${user.user.subscriptionId}`)
       .then((res) => {
-        setUser(subscribed(''));
+        setUser(subscribed('', ''));
 
         // subscribed(false);
         swal('Good job!', 'Unsubscribe is successfull!', 'success', {
@@ -175,13 +103,12 @@ const PaymentForm = (props) => {
   };
 
   return (
-    //   <p>Payment module here</p>
     <React.Fragment>
       <Breadcrumbs breadCrumbTitle="Subscribe" breadCrumbParent="Dashboard" breadCrumbActive="Subscribe" />
       {isSubscribed ? (
         <div>
           <h1>You have already subscribed.</h1>
-          <Button.Ripple color="primary" className="mr-1 mb-1" size="lg" onClick={unsubscribeNow} disabled={disable}>
+          <Button.Ripple color="primary" className="mr-1 mb-1" size="lg" onClick={unsubscribeNow} close={disable}>
             UNSUBSCRIBE NOW
           </Button.Ripple>
         </div>
@@ -194,21 +121,11 @@ const PaymentForm = (props) => {
                   <div className="container">
                     <Formik
                       initialValues={{
-                        firstName: '',
-                        // email: '',
-                        address1: '',
-                        address2: '',
-                        country: '',
-                        city: '',
-                        state: '',
-                        zip: '',
-                        cardName: '',
                         cardNo: '',
                         cvv: '',
                         expmonth: '',
                         expyear: '',
-                        phoneNumber: '',
-                        expirationDate: ''
+                        phoneNumber: ''
                       }}
                       validationSchema={subscriptionSchema}
                       onSubmit={(values, actions) => {
@@ -219,205 +136,6 @@ const PaymentForm = (props) => {
                       {({ values, errors, touched, handleSubmit, handleChange, handleBlur }) => (
                         <div className="row">
                           <div className="col-50">
-                            <h3>Billing Address</h3>
-                            <CustomField
-                              name={'firstName'}
-                              label={'First Name'}
-                              labelClass={'fa fa-user'}
-                              value={values.firstName}
-                              placeholder="John"
-                              type="text"
-                              className="input"
-                              id="firstName"
-                              name="firstName"
-                              changed={handleChange('firstName')}
-                              blured={handleBlur('firstName')}
-                            />
-                            <CustomField
-                              name={'lastName'}
-                              label={'Last Name'}
-                              labelClass={'fa fa-user'}
-                              value={values.lastName}
-                              placeholder="Doe"
-                              type="text"
-                              className="input"
-                              id="lastName"
-                              name="lastName"
-                              changed={handleChange('lastName')}
-                              blured={handleBlur('lastName')}
-                            />
-                            <Field
-                              component={() => (
-                                <TextField
-                                  name="expirationDate"
-                                  id="expirationDate"
-                                  className="input"
-                                  label="Expiration Date"
-                                  type="date"
-                                  onChange={handleChange('expirationDate')}
-                                  onBlur={handleBlur('expirationDate')}
-                                  value={values.expirationDate}
-                                  // className={classes.textField}
-                                  InputLabelProps={{
-                                    shrink: true
-                                  }}
-                                />
-                              )}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="expirationDate" />
-                            </div>
-                            {/* <label for="name">
-                              <i className="fa fa-user" /> Full Name
-                            </label>
-                            <Field
-                              type="text"
-                              className="input"
-                              id="name"
-                              name="name"
-                              placeholder="John M. Doe"
-                              value={values.name}
-                              onChange={handleChange('name')}
-                              onBlur={handleBlur('name')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="name" />
-                            </div> */}
-                            {/* <label for="email">
-                              <i className="fa fa-envelope" /> Email
-                            </label>
-                            <Field
-                              className="input"
-                              type="email"
-                              id="email"
-                              value={values.email}
-                              onChange={handleChange('email')}
-                              onBlur={handleBlur('email')}
-                              name="email"
-                              placeholder="john@example.com"
-                            />
-                            <div className="error">
-                              <ErrorMessage name="email" />
-                            </div> */}
-                            <label for="phoneNumber">
-                              <i className="fa fa-address-card-o" /> Phone Number
-                            </label>
-                            <Field
-                              className="input"
-                              type="phoneNumber"
-                              id="phoneNumber"
-                              value={values.phoneNumber}
-                              onChange={handleChange('phoneNumber')}
-                              onBlur={handleBlur('phoneNumber')}
-                              name="phoneNumber"
-                              placeholder="+9230000000"
-                            />
-                            <div className="error">
-                              <ErrorMessage name="phoneNumber" />
-                            </div>
-                            <label for="address1">
-                              <i className="fa fa-address-card-o" /> Address Line 1
-                            </label>
-                            <Field
-                              className="input"
-                              type="text"
-                              id="address1"
-                              name="address1"
-                              placeholder="542 W. 15th Street"
-                              value={values.address1}
-                              onChange={handleChange('address1')}
-                              onBlur={handleBlur('address1')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="address1" />
-                            </div>
-                            <label for="address2">
-                              <i className="fa fa-street-view" /> Address Line 2
-                            </label>
-                            <Field
-                              className="input"
-                              type="text"
-                              id="address2"
-                              name="address2"
-                              placeholder="542 W. 15th Street"
-                              value={values.address2}
-                              onChange={handleChange('address2')}
-                              onBlur={handleBlur('address2')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="address2" />
-                            </div>
-
-                            <label for="country">
-                              <i className="fa fa-flag" /> Country Code
-                            </label>
-                            <Field
-                              className="input"
-                              type="text"
-                              name="country"
-                              placeholder="US"
-                              value={values.country}
-                              onChange={handleChange('country')}
-                              onBlur={handleBlur('country')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="country" />
-                            </div>
-
-                            <label for="city">
-                              <i className="fa fa-institution" /> City
-                            </label>
-                            <Field
-                              className="input"
-                              type="text"
-                              id="city"
-                              name="city"
-                              placeholder="New York"
-                              value={values.city}
-                              onChange={handleChange('city')}
-                              onBlur={handleBlur('city')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="city" />
-                            </div>
-
-                            <div className="row">
-                              <div className="col-50">
-                                <label for="state">State</label>
-                                <Field
-                                  className="input"
-                                  type="text"
-                                  id="state"
-                                  name="state"
-                                  placeholder="NY"
-                                  value={values.state}
-                                  onChange={handleChange('state')}
-                                  onBlur={handleBlur('state')}
-                                />
-                                <div className="error">
-                                  <ErrorMessage name="state" />
-                                </div>
-                              </div>
-                              <div className="col-50">
-                                <label for="zip">Zip</label>
-                                <Field
-                                  className="input"
-                                  type="text"
-                                  id="zip"
-                                  name="zip"
-                                  placeholder="10001"
-                                  value={values.zip}
-                                  onChange={handleChange('zip')}
-                                  onBlur={handleBlur('zip')}
-                                />
-                                <div className="error">
-                                  <ErrorMessage name="zip" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="col-50">
                             <h3>Payment</h3>
                             <label for="fname">Accepted Cards</label>
                             <div className="icon-container">
@@ -425,20 +143,6 @@ const PaymentForm = (props) => {
                               <i className="fa fa-cc-amex" style={{ color: 'blue' }} />
                               <i className="fa fa-cc-mastercard" style={{ color: 'red' }} />
                               <i className="fa fa-cc-discover" style={{ color: 'orange' }} />
-                            </div>
-                            <label for="cardName">Name on Card</label>
-                            <Field
-                              className="input"
-                              type="text"
-                              id="cardName"
-                              name="cardName"
-                              placeholder="John More Doe"
-                              value={values.cardName}
-                              onChange={handleChange('cardName')}
-                              onBlur={handleBlur('cardName')}
-                            />
-                            <div className="error">
-                              <ErrorMessage name="cardName" />
                             </div>
                             <label for="cardNo">Credit card number</label>
                             <Field

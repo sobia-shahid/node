@@ -3,15 +3,8 @@ const router = express.Router();
 
 const controller = require('../controllers/gateway-controller');
 
-router.post('/payment', controller.subscribe);
-router.post('/payment/history', controller.savehistory);
-router.get('/payment/history', controller.gethistory);
-router.get('/invoice/:uid', controller.invoice);
-// router.route('/reciept').get(controller.payments);
-//router.route('/subscriptions/:subid').get(controller.payments);
-
-//router.route('/order').post(controller.order);
+router.post('/subscribe', controller.subscribe);
 router.route('/unsubscribe/:subid').post(controller.cancelSubscription);
-router.route('/reciept').get(controller.reciept);
+router.route('/reciepts/:customerId').get(controller.reciepts);
 
 module.exports = router;

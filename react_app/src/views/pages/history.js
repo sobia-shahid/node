@@ -1,46 +1,137 @@
-import React, { useContext, useState } from 'react';
-import { Row, Col } from 'reactstrap';
+import React, { useContext, useEffect, useState } from 'react';
+import { Row } from 'reactstrap';
+import { makeStyles } from '@material-ui/core/styles';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Paper from '@material-ui/core/Paper';
 import Breadcrumbs from '../../components/@vuexy/breadCrumbs/BreadCrumb';
+import GoToIcon from '@material-ui/icons/ExitToApp';
+import DownloadIcon from '@material-ui/icons/CloudDownload';
 import axios from 'axios';
-import { Button } from 'reactstrap';
-import fileDownload from 'js-file-download';
+// import Date from 'datejs';
 
 import { UserContext } from '../../360/context/user';
+import { IconButton } from '@material-ui/core';
+
+const useStyles = makeStyles({
+  table: {
+    minWidth: 700
+  }
+});
+
+function ccyFormat(num) {
+  return `${num.toFixed(2)}`;
+}
+
+function total(items) {
+  return items.map(({ amount }) => amount).reduce((sum, i) => sum + i, 0);
+}
+
+function SpanningTable({ rows }) {
+  const classes = useStyles();
+
+  return (
+    <TableContainer component={Paper} style={{ marginTop: '20px' }}>
+      <Table className={classes.table} aria-label="spanning table">
+        <TableHead>
+          <TableRow>
+            <TableCell align="center" colSpan={3}>
+              Details
+            </TableCell>
+            <TableCell align="right">Price</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Created At</TableCell>
+            <TableCell align="right">Currency</TableCell>
+            <TableCell align="right">Reason</TableCell>
+            <TableCell align="right">Amount</TableCell>
+            <TableCell />
+            <TableCell />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.createdAt}>
+              <TableCell>{row.createdAt}</TableCell>
+              <TableCell align="left">{row.currency}</TableCell>
+              <TableCell align="left">{row.reason}</TableCell>
+              <TableCell align="left">{ccyFormat(row.amount)}</TableCell>
+              <TableCell>
+                <a
+                  href="https://invoice.stripe.com/i/acct_1IS74pBMi4SK1isS/invst_J7XnRNEzTdVoy15Dsce4D6jmOCYzg2W"
+                  target="_blank"
+                >
+                  <IconButton aria-label="goToLink" className={classes.margin} size="small">
+                    <GoToIcon fontSize="inherit" />
+                  </IconButton>
+                </a>
+              </TableCell>
+              <TableCell>
+                <a
+                  href="https://pay.stripe.com/invoice/acct_1IS74pBMi4SK1isS/invst_J7XnRNEzTdVoy15Dsce4D6jmOCYzg2W/pdf"
+                  target="_blank"
+                >
+                  <IconButton aria-label="download" className={classes.margin} size="small">
+                    <DownloadIcon fontSize="inherit" />
+                  </IconButton>
+                </a>
+              </TableCell>
+            </TableRow>
+          ))}
+
+          <TableRow>
+            <TableCell colSpan={2} />
+            <TableCell>
+              <b>Total</b>
+            </TableCell>
+            <TableCell>{ccyFormat(total(rows))}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
 
 export default function History() {
   const [ user, setUser ] = useState(useContext(UserContext).user);
-  const [ link, setLink ] = useState(`http://localhost:5000/api/gateway/invoice/${user.user._id}`);
-  console.log(user.user._id);
-  console.log(link);
+  const [ invoices, setInvoices ] = useState([]);
 
-  const handleDownload = () => {
-    axios
-      .get('http://localhost:5000/api/gateway/invoice/6045f1b9a1247b785c64f773', { responseType: 'blob' })
-      .then((res) => {
-        fileDownload(res.data, 'reciept.pdf');
-      })
-      .catch((err) => {
-        console.log(err);
-        console.log(err.response);
-      });
-  };
+  useEffect(() => {
+    if (user.user.customerId)
+      axios
+        .get(`/api/gateway/reciepts/${user.user.customerId}`)
+        .then((res) => {
+          setInvoices(res.data);
+        })
+        .catch((err) => {
+          console.log(err);
+          console.log(err.response);
+        });
+  }, []);
+  function createRow(createdAt, currency, reason, amount, hostedUrl, downloadUrl) {
+    return { createdAt, currency, reason, amount, hostedUrl, downloadUrl };
+  }
+
+  debugger;
+  const rows = invoices.map((invoice) => {
+    return createRow(
+      new Date(invoice.createdAt * 1000).toDateString(),
+      invoice.currency,
+      invoice.reason,
+      invoice.amount / 100,
+      invoice.hostedUrl,
+      invoice.downloadUrl
+    );
+  });
+
   return (
     <React.Fragment>
       <Breadcrumbs breadCrumbTitle="History" breadCrumbParent="Dashboard" breadCrumbActive="History" />
-      <Row>
-        <Col sm="12">
-          <h1>Payment History</h1>
-          <a
-            // href="http://localhost:5000/api/gateway/invoice/6045f1b9a1247b785c64f773"
-            href={link}
-            target="_blank"
-          >
-            <Button.Ripple color="primary" className="mr-1 mb-1" size="lg">
-              DOWNLOAD NOW
-            </Button.Ripple>
-          </a>
-        </Col>
-      </Row>
+      {rows.length ? <SpanningTable rows={rows} /> : <p>You don't have any payment history.</p>}
     </React.Fragment>
   );
 }

@@ -5,257 +5,175 @@ const _ = require('lodash');
 const niceInvoice = require('nice-invoice');
 const fs = require('fs');
 var crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
 const stripe = require('stripe')(
   'sk_test_51IS74pBMi4SK1isS6vKcgILR9VDl98u5z20rIgLtjjj40wAhKxiihL7L5BzDlfPLiOAjuh94Ow2ak4v7UmONXUIS008kaaBlxD'
 );
-
-const saveHistory = async (req, res) => {
-  const history = req.body;
-  console.log(history);
-  var hist = new orderHistory(history);
-  hist.save((err, sucess) => {
-    if (err) {
-      res.status(400).json({ message: err });
-    } else {
-      res.status(200).json({ message: sucess });
-    }
-  });
-};
-
-const getHistory = async (req, res) => {
-  let users;
-  try {
-    users = await orderHistory.find({});
-  } catch (err) {
-    const error = new HttpError('can not find the users', 5000);
-    return next(error);
+const mailTransporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'nodet245@gmail.com', //your email
+    pass: '123/123node' //password
   }
-  res.json(users.map((user) => user.toObject({ getters: true })));
-};
+});
 
 const subscribe = async (req, res) => {
-   
-  const  {email}  = req.body;
+  const { email, cvc, cardNo, expirationMonth, expirationYear } = req.body;
   console.log(email);
-  User.findOne({email}, (err, userObj) => {
+  User.findOne({ email }, (err, userObj) => {
     if (err || !userObj) {
       console.log(err);
       return res.status(400).json({ message: 'user with this email not found.' });
     }
     console.log(userObj.subscriptionId);
     if (userObj.subscriptionId != '') {
-        return res.status(400).json({ message: 'already have subscription' });
+      return res.status(400).json({ message: 'already have subscription' });
     } else {
-      
-      (async () =>{ 
-      try {
-        const paymentMethod = await stripe.paymentMethods.create({
-          type: 'card',
-          card: {
-            number: '4242424242424242',
-            exp_month: 3,
-            exp_year: 2022,
-            cvc: '314'
-          }
-        });
-        console.log(paymentMethod.id);
-    
-        const customer = await stripe.customers.create({
-          description: 'My First Test customer'
-          // invoice_settings: { default_payment_method: paymentMethod.id }
-        });
-        console.log(customer.id);
-    
-        await stripe.paymentMethods.attach(paymentMethod.id, { customer: customer.id });
-    
-        const subscription = await stripe.subscriptions.create({
-          customer: customer.id,
-          items: [ { price: 'price_1IS797BMi4SK1isSTxOBKGa5' } ],
-          default_payment_method: paymentMethod.id
-        });
-        console.log(subscription.id);
-        const obj = {
-              subscriptionId: subscription.id,
-              customerId:customer.id
-            };
-            userObj = _.extend(userObj, obj);
-            userObj.save((err, result) => {
-              if (err) {
-                return res.status(400).json({ message: 'cant able to get subscription' });
-              } else {
-                return res.status(200).json({ subscriptionId: subscription.id, message: 'Subscribed Succesfully.' });
-              }
-            });
-          }
-          catch (err) {
-            console.log(err);
-            return res.status(400).json(err);
-          }
-        })();
+      (async () => {
+        try {
+          const paymentMethod = await stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+              number: cardNo,
+              exp_month: expirationMonth,
+              exp_year: expirationYear,
+              cvc: cvc
+            }
+          });
+          console.log(paymentMethod.id);
+
+          const customer = await stripe.customers.create({
+            description: 'Payment for (' + userObj.name + ')',
+            name: userObj.username,
+            email: userObj.email
+          });
+          console.log(customer.id);
+
+          await stripe.paymentMethods.attach(paymentMethod.id, { customer: customer.id });
+
+          const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            items: [ { price: 'price_1IVZpBBMi4SK1isSYD6DVcLY' } ],
+            default_payment_method: paymentMethod.id
+          });
+          console.log(subscription.id);
+          const obj = {
+            subscriptionId: subscription.id,
+            customerId: customer.id
+          };
+          userObj = _.extend(userObj, obj);
+          userObj.save(async (err, result) => {
+            if (err) {
+              console.log(err);
+              return res.status(400).json({ message: 'Unable to subscribe. Please try again.' });
+            } else {
+              // getting the invoice from provided subscription
+              const invoice = await stripe.invoices.retrieve('in_1IV7KGBMi4SK1isSUpp3p05a');
+
+              const mailContent = `<h1 style="color: #5e9ca0;">Subscription Sucessful</h1>
+  <h2 style="color: #2e6c80;">You have subscribed as a premieum user.</h2>
+  <p>You can get the reciept of your subscription with the links below.</p>
+  <a href=${invoice.hosted_invoice_url} target="_blank">Click to view PDF</a>
+  <br />
+  <a href=${invoice.invoice_pdf} target="_blank">Click to dowload reciept.</a>`;
+
+              sendEmail(mailContent, userObj.email, 'Subscription Successful');
+
+              return res
+                .status(200)
+                .json({ subscriptionId: subscription.id, customerId: customer.id, message: 'Subscribed Succesfully.' });
+            }
+          });
+        } catch (err) {
+          console.log(err);
+          return res.status(400).json({ message: err.raw.message });
+        }
+      })();
     }
   });
 };
 
 const cancelSubscription = async (req, res) => {
-  const sub_id = req.params.subid;
-  console.log(sub_id);
-  User.findOne({ subscriptionId: sub_id }, (err, userObj) => {
+  const subscriptionId = req.params.subid;
+  console.log(subscriptionId);
+  User.findOne({ subscriptionId }, (err, userObj) => {
     if (err) {
-      res.status(400).json({ message: 'subscription  not found' });
+      res.status(400).json({ message: 'User with this subscription found.' });
     } else {
-    // console.log(userObj)
-      (async ()=>{ 
-        console.log(userObj) 
-      try {
-        const deleted = await stripe.subscriptions.del(sub_id);
-         
-        obj = {
-          subscriptionId: '',
-          customerId:''
-        };
-        userObj = _.extend(userObj, obj);
-        userObj.save((err, result) => {
-          if (err) {
-            return res.status(400).json({ message: 'cant able to cancel subscription' });
-          } else {
-            return res.status(200).json({message:"Sucessfully unsubscribe"});
-          }
-        });
-      }catch (error) {
-        console.log(error)
-        return res.status(400).json(error);
-      }
-    })()
-           
-          }
-      
-     
-    
-  });
-};
-
- 
-
-const invoice = async (req, res) => {
-  const _id = req.params.uid;
-  User.findOne({ _id }, (err, user) => {
-    if (err || !user) {
-      return response.status(400).json({ error: 'User with this email not found.' });
-    }
-    console.log(user);
-    d = new Date();
-    const invoiceDetail = {
-      shipping: {
-        name: user.username,
-        address: user.streetAdress,
-        city: user.city,
-        state: user.state,
-        country: user.country,
-        postal_code: user.postalcode
-      },
-      items: [
-        {
-          item: 'Subscription ',
-          description: 'Premium plan of month',
-          quantity: 1,
-          price: parseInt(user.totalbill),
-          tax: '0%'
+      (async () => {
+        try {
+          const deleted = await stripe.subscriptions.del(subscriptionId);
+          const invoice = await stripe.invoices.retrieve(deleted.latest_invoice);
+          const refund = await stripe.refunds.create({ charge: invoice.charge });
+          obj = {
+            subscriptionId: '',
+            customerId: ''
+          };
+          userObj = _.extend(userObj, obj);
+          userObj.save((err, result) => {
+            if (err) {
+              return res.status(400).json({ message: 'unable to cancel subscription' });
+            } else {
+              const emailContent = `<h1 style="color: #5e9ca0;">Amount Refund on Unsubscription.</h1>
+              <h2 style="color: #2e6c80;">You have unsubscribed from a premium user.</h2>
+              <p>You recieved refund amount on unsubscription.</p><table><tr><th>Amount</th><th>Currency</th>
+              </tr><tr><td>${refund.amount / 100}</td><td>${refund.currency}</td></tr></table>`;
+              sendEmail(emailContent, userObj.email, 'Unsubscribed Successfuly.');
+              return res.status(200).json({ message: 'Sucessfully unsubscribed.' });
+            }
+          });
+        } catch (error) {
+          console.log(error);
+          return res.status(400).json(error);
         }
-      ],
-      subtotal: parseInt(user.totalbill),
-      total: parseInt(user.totalbill),
-      order_number: parseInt(user.transactionNo),
-      header: {
-        company_name: 'WalkinBack',
-        company_logo: '',
-        company_address: 'www.walkinBack.com'
-      },
-      footer: {
-        text: 'please make the check payable to the company name'
-      },
-      currency_symbol: '$',
-      date: {
-        billing_date: `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`,
-        due_date: `${d.getDate() + 15}/${d.getMonth() + 1}/${d.getFullYear()}`
-      }
-    };
-    niceInvoice(invoiceDetail, 'new-invoice.pdf');
-
-    var stream = fs.createReadStream(__basedir + '/new-invoice.pdf');
-    var filename = 'new-invoice.pdf';
-    filename = encodeURIComponent(filename);
-    res.setHeader('Content-disposition', 'inline; filename="' + filename + '"');
-    res.setHeader('Content-type', 'application/pdf');
-    stream.pipe(res);
+      })();
+    }
   });
 };
 
-// const subscribeNow = async (req, res) => {
-//   try {
-//     const paymentMethod = await stripe.paymentMethods.create({
-//       type: 'card',
-//       card: {
-//         number: '4242424242424242',
-//         exp_month: 3,
-//         exp_year: 2022,
-//         cvc: '314'
-//       }
-//     });
-//     console.log(paymentMethod.id);
-
-//     const customer = await stripe.customers.create({
-//       description: 'My First Test customer'
-//       // invoice_settings: { default_payment_method: paymentMethod.id }
-//     });
-//     console.log(customer.id);
-
-//     await stripe.paymentMethods.attach(paymentMethod.id, { customer: customer.id });
-
-//     const subscription = await stripe.subscriptions.create({
-//       customer: customer.id,
-//       items: [ { price: 'price_1IS797BMi4SK1isSTxOBKGa5' } ],
-//       default_payment_method: paymentMethod.id
-//     });
-//     console.log(subscription.id);
-
-//     return res.status(200).json(subscription);
-//   } catch (err) {
-//     console.log(err);
-//     return res.status(400).json(err);
-//   }
-// };
-
-// const unsubscribeNow = async (req, res) => {
-//   const subId = req.params.subid;
-
-//   try {
-//     const deleted = await stripe.subscriptions.del(subId);
-//     return res.status(204).json(deleted);
-//   } catch (error) {
-//     return res.status(400).json(error);
-//   }
-// };
-
-const getReciept = async (req, res) => {
-  const customerId = 'cus_J7QY76hNhw4Uo6';
-
+const getReciepts = async (req, res) => {
+  console.log('Came here.');
+  const { customerId } = req.params;
   try {
-    const subscriptions = await stripe.invoices.list({
-      // limit: 10,
+    const reciepts = await stripe.invoices.list({
       customer: customerId
     });
-    return res.status(200).json(subscriptions);
+    const refinedReciepts = reciepts.data.map((r) => ({
+      createdAt: r.created,
+      currency: r.currency,
+      reason: r.billing_reason,
+      amount: r.amount_paid,
+      status: r.status,
+      subscription: r.subscription,
+      hostedUrl: r.hosted_invoice_url,
+      downloadUrl: r.invoice_pdf,
+      customerId: r.customer
+    }));
+    return res.status(200).json(refinedReciepts);
   } catch (error) {
+    console.log(error);
     return res.status(400).json(error);
   }
 };
 
-exports.subscribe = subscribe;
-//exports.payments = getSubscriptionPayments;
-exports.invoice = invoice;
-exports.savehistory = saveHistory;
-exports.gethistory = getHistory;
+const sendEmail = (content, email, subject) => {
+  const mailDetails = {
+    from: 'nodet245@gmail.com',
+    to: email,
+    subject: subject,
+    html: content
+  };
 
-//exports.order = subscribeNow;
+  mailTransporter.sendMail(mailDetails, (err, info) => {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(info);
+    }
+  });
+};
+
 exports.cancelSubscription = cancelSubscription;
-exports.reciept = getReciept;
+exports.reciepts = getReciepts;
+exports.subscribe = subscribe;
