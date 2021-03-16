@@ -1,10 +1,5 @@
-var unirest = require('unirest');
 const User = require('../models/user');
-const orderHistory = require('../models/getOrderHistory');
 const _ = require('lodash');
-const niceInvoice = require('nice-invoice');
-const fs = require('fs');
-var crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 const stripe = require('stripe')(

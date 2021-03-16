@@ -115,8 +115,7 @@ export default function History() {
   function createRow(createdAt, currency, reason, amount, hostedUrl, downloadUrl) {
     return { createdAt, currency, reason, amount, hostedUrl, downloadUrl };
   }
-
-  debugger;
+  
   const rows = invoices.map((invoice) => {
     return createRow(
       new Date(invoice.createdAt * 1000).toDateString(),

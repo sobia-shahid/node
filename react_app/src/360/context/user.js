@@ -2,12 +2,12 @@
 import React from 'react';
 export const UserContext = React.createContext();
 
-function getUsersFromLoacalStorage() {
+function getUsersFromLocalStorage() {
   return localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : { user: null, token: null };
 }
 
 export default function UserProvider({ children }) {
-  const [ user, setUser ] = React.useState(getUsersFromLoacalStorage);
+  const [ user, setUser ] = React.useState(getUsersFromLocalStorage);
 
   const userLogin = (user, token) => {
     setUser(user);
@@ -23,8 +23,8 @@ export default function UserProvider({ children }) {
     const user = JSON.parse(localStorage.getItem('user'));
     user.user.subscriptionId = subscriptionId;
     user.user.customerId = customerId;
+    setUser(user);
     localStorage.setItem('user', JSON.stringify(user));
-
     return user;
   };
 

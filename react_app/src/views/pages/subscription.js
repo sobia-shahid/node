@@ -39,6 +39,8 @@ const PaymentForm = (props) => {
   const isSubscribed = user.user.subscriptionId ? true : false;
   const [ disable, setDisable ] = useState(false);
 
+  debugger;
+
   const formSubmitted = (values) => {
     // demo card
     // 4242424242424242
