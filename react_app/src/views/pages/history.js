@@ -99,6 +99,29 @@ function SpanningTable({ rows }) {
 export default function History() {
   const [ user, setUser ] = useState(useContext(UserContext).user);
   const [ invoices, setInvoices ] = useState([]);
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    axios
+      .put(`/api/gateway/sub/${user.user.subscriptionId}/status`, { email: user.user.email })
+      .then((res) => {
+        if (!res.data.status) {
+          // it will remove the subscriptionId and customerId from localstorage
+          user.user.isPremium = false;
+          user.user.subscriptionId = '';
+          user.user.customerId = '';
+
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      })
+      .catch((err) => {
+        user.user.isPremium = false;
+        user.user.subscriptionId = '';
+        user.user.customerId = '';
+
+        localStorage.setItem('user', JSON.stringify(user));
+      });
+  }, []);
 
   useEffect(() => {
     if (user.user.customerId)
@@ -115,7 +138,7 @@ export default function History() {
   function createRow(createdAt, currency, reason, amount, hostedUrl, downloadUrl) {
     return { createdAt, currency, reason, amount, hostedUrl, downloadUrl };
   }
-  
+
   const rows = invoices.map((invoice) => {
     return createRow(
       new Date(invoice.createdAt * 1000).toDateString(),

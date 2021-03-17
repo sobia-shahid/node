@@ -24,6 +24,7 @@ const userSchema = new Schema(
 );
 userSchema.plugin(uniqueValidator);
 
+userSchema.add({ isPremium: { type: Boolean, default: false } });
 userSchema.add({ restlink: { data: String, default: '' } });
 userSchema.add({ subscriptionId: { type: String, required: false, default: '' } });
 userSchema.add({ customerId: { type: String, required: false, default: '' } });
@@ -32,7 +33,6 @@ userSchema.add({ streetAdress: { type: String, required: false, default: '' } })
 userSchema.add({ city: { type: String, required: false, default: '' } });
 userSchema.add({ country: { type: String, required: false, default: '' } });
 userSchema.add({ postalcode: { type: String, required: false, default: '' } });
-userSchema.add({ transactionNo: { type: String, required: false, default: '' } });
 userSchema.add({ state: { type: String, required: false, default: '' } });
 
 // userSchema.add({ transactionno: { type: String, required: false, default: '' } });

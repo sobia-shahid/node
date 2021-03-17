@@ -23,6 +23,9 @@ export default function UserProvider({ children }) {
     const user = JSON.parse(localStorage.getItem('user'));
     user.user.subscriptionId = subscriptionId;
     user.user.customerId = customerId;
+    if (subscriptionId && customerId)
+      user.user.isPremium = true; //will set premium user to true
+    else user.user.isPremium = false;
     setUser(user);
     localStorage.setItem('user', JSON.stringify(user));
     return user;

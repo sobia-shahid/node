@@ -1,18 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { Row, Col, Card } from "reactstrap";
-import { useParams, useLocation, useHistory } from "react-router-dom";
-import Breadcrumbs from "../../components/@vuexy/breadCrumbs/BreadCrumbAddTour";
-import UserProductList from "../../360/Components/Products/UserProductList";
-import Pagination from "../../components/@vuexy/Pagination/Pagination";
-import { ProductContext } from "../../360/context/products";
-import { UserContext } from "../../360/context/user";
-import axios from "axios";
-import imaga from "../../360/Assets/nice1.jpg";
-import Loading from "../../components/@vuexy/spinner/Loading-spinner";
-import ContentLoader, { Facebook } from "react-content-loader";
-import { PlusCircle } from "react-feather";
-import Frame from "../../360/Pages/FrameNoVirtual";
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Card } from 'reactstrap';
+import { useParams, useLocation, useHistory } from 'react-router-dom';
+import Breadcrumbs from '../../components/@vuexy/breadCrumbs/BreadCrumbAddTour';
+import UserProductList from '../../360/Components/Products/UserProductList';
+import Pagination from '../../components/@vuexy/Pagination/Pagination';
+import { ProductContext } from '../../360/context/products';
+import { UserContext } from '../../360/context/user';
+import axios from 'axios';
+import imaga from '../../360/Assets/nice1.jpg';
+import Loading from '../../components/@vuexy/spinner/Loading-spinner';
+import ContentLoader, { Facebook } from 'react-content-loader';
+import { PlusCircle } from 'react-feather';
+import Frame from '../../360/Pages/FrameNoVirtual';
+
 export default function VirtualTour() {
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    axios
+      .put(`/api/gateway/sub/${user.user.subscriptionId}/status`, { email: user.user.email })
+      .then((res) => {
+        if (!res.data.status) {
+          // it will remove the subscriptionId and customerId from localstorage
+          user.user.isPremium = false;
+          user.user.subscriptionId = '';
+          user.user.customerId = '';
+
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      })
+      .catch((err) => {
+        user.user.isPremium = false;
+        user.user.subscriptionId = '';
+        user.user.customerId = '';
+
+        localStorage.setItem('user', JSON.stringify(user));
+      });
+  }, []);
   const { products } = React.useContext(ProductContext);
   const history = useHistory();
   const MyLoader = (props) => (
@@ -35,17 +59,17 @@ export default function VirtualTour() {
   );
   const { user } = React.useContext(UserContext);
   const { counter } = React.useContext(ProductContext);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(3);
-  const [uid, setUid] = useState(user.user ? user.user._id : '');
-  const [userProducts, setUserProducts] = useState([]);
-  const [userProductsLength, setUserProductsLength] = useState("");
-  const [loading, setloading] = useState(false);
-  const [username, setUsername] = useState(user.user ? user.user.username : '');
+  const [ currentPage, setCurrentPage ] = useState(1);
+  const [ pageSize, setPageSize ] = useState(3);
+  const [ uid, setUid ] = useState(user.user ? user.user._id : '');
+  const [ userProducts, setUserProducts ] = useState([]);
+  const [ userProductsLength, setUserProductsLength ] = useState('');
+  const [ loading, setloading ] = useState(false);
+  const [ username, setUsername ] = useState(user.user ? user.user.username : '');
   let UserProduct = products.filter((pro) => pro.userId == uid);
   React.useEffect(() => {
     if (uid === '') {
-      history.push('/')
+      history.push('/');
     }
     showPlaces();
   }, []);
@@ -53,7 +77,7 @@ export default function VirtualTour() {
     setloading(true);
     axios
       .get(`/api/places/user/${uid}`, {
-        params: { currentPage, pageSize },
+        params: { currentPage, pageSize }
       })
       .then((res) => {
         console.log(res.data);
@@ -69,7 +93,7 @@ export default function VirtualTour() {
     setloading(true);
     axios
       .get(`/api/places/user/${uid}`, {
-        params: { currentPage, pageSize },
+        params: { currentPage, pageSize }
       })
       .then((res) => {
         console.log(res.data);
@@ -89,7 +113,7 @@ export default function VirtualTour() {
   return (
     <React.Fragment>
       {userProductsLength <= 0 ? (
-        <>
+        <React.Fragment>
           <div>
             <Breadcrumbs
               breadCrumbTitle="Virtual Tours"
@@ -103,39 +127,39 @@ export default function VirtualTour() {
                 zoom="1"
                 fov="80"
               >
-                {" "}
+                {' '}
               </Frame>
               <div
                 style={{
-                  width: "100%",
-                  height: "500px",
-                  backgroundColor: "black",
-                  opacity: "0.8",
-                  position: "absolute",
-                  top: "0px",
-                  left: "0px",
-                  zIndex: "1",
-                  display: "grid",
+                  width: '100%',
+                  height: '500px',
+                  backgroundColor: 'black',
+                  opacity: '0.8',
+                  position: 'absolute',
+                  top: '0px',
+                  left: '0px',
+                  zIndex: '1',
+                  display: 'grid'
                 }}
               >
-                <div style={{ justifySelf: "center", alignSelf: "center" }}>
+                <div style={{ justifySelf: 'center', alignSelf: 'center' }}>
                   <PlusCircle
-                    style={{ zIndex: "2", cursor: "pointer" }}
+                    style={{ zIndex: '2', cursor: 'pointer' }}
                     size={70}
                     color="white"
-                    onClick={() => history.push("/AddPlace")}
-                  ></PlusCircle>
+                    onClick={() => history.push('/AddPlace')}
+                  />
                   <h4
                     style={{
-                      textAlign: "center",
-                      color: "white",
+                      textAlign: 'center',
+                      color: 'white',
 
-                      textTransform: "uppercase",
-                      justifySelf: "center",
-                      position: "absolute",
-                      left: "50%",
-                      top: "62%",
-                      transform: "translate(-50%,50%)",
+                      textTransform: 'uppercase',
+                      justifySelf: 'center',
+                      position: 'absolute',
+                      left: '50%',
+                      top: '62%',
+                      transform: 'translate(-50%,50%)'
                     }}
                   >
                     Dear {username}, create your first virtual tour
@@ -144,14 +168,14 @@ export default function VirtualTour() {
               </div>
             </Card>
           </div>
-        </>
+        </React.Fragment>
       ) : (
         <Row>
           <Col lg="12">
             {loading ? (
               MyLoader()
             ) : (
-              <>
+              <React.Fragment>
                 <Breadcrumbs
                   breadCrumbTitle="Virtual Tours"
                   breadCrumbParent="Dashboard"
@@ -164,7 +188,7 @@ export default function VirtualTour() {
                   currentPage={currentPage}
                   onPageChange={handlePageChange}
                 />
-              </>
+              </React.Fragment>
             )}
           </Col>
         </Row>

@@ -55,7 +55,8 @@ const subscribe = async (req, res) => {
           console.log(subscription.id);
           const obj = {
             subscriptionId: subscription.id,
-            customerId: customer.id
+            customerId: customer.id,
+            isPremium: true
           };
           userObj = _.extend(userObj, obj);
           userObj.save(async (err, result) => {
@@ -103,7 +104,8 @@ const cancelSubscription = async (req, res) => {
           const refund = await stripe.refunds.create({ charge: invoice.charge });
           obj = {
             subscriptionId: '',
-            customerId: ''
+            customerId: '',
+            isPremium: false
           };
           userObj = _.extend(userObj, obj);
           userObj.save((err, result) => {
@@ -120,7 +122,7 @@ const cancelSubscription = async (req, res) => {
           });
         } catch (error) {
           console.log(error);
-          return res.status(400).json(error);
+          return res.status(400).json({ message: err.raw.message });
         }
       })();
     }
@@ -169,6 +171,28 @@ const sendEmail = (content, email, subject) => {
   });
 };
 
+const checkSubscriptionStatus = async (req, res) => {
+  const { subscriptionId } = req.params;
+  const { email } = req.body;
+
+  console.log(subscriptionId);
+  console.log(email);
+  if (!subscriptionId || !email) return res.status(200).json({ status: false });
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const user = await User.findOne({ email: email });
+    user.isPremium = subscription.status === 'active';
+    console.log(subscription.status);
+    user.save();
+
+    res.status(200).json({ status: user.isPremium });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ message: error.raw.message });
+  }
+};
+
 exports.cancelSubscription = cancelSubscription;
 exports.reciepts = getReciepts;
 exports.subscribe = subscribe;
+exports.isPremium = checkSubscriptionStatus;

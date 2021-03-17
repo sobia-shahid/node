@@ -39,7 +39,29 @@ const PaymentForm = (props) => {
   const isSubscribed = user.user.subscriptionId ? true : false;
   const [ disable, setDisable ] = useState(false);
 
-  debugger;
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    axios
+      .put(`/api/gateway/sub/${user.user.subscriptionId}/status`, { email: user.user.email })
+      .then((res) => {
+        if (!res.data.status) {
+          // it will remove the subscriptionId and customerId from localstorage
+          user.user.isPremium = false;
+          user.user.subscriptionId = '';
+          user.user.customerId = '';
+
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      })
+      .catch((err) => {
+        user.user.isPremium = false;
+        user.user.subscriptionId = '';
+        user.user.customerId = '';
+
+        localStorage.setItem('user', JSON.stringify(user));
+      });
+  }, []);
 
   const formSubmitted = (values) => {
     // demo card
