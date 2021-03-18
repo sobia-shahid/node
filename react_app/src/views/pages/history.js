@@ -61,20 +61,14 @@ function SpanningTable({ rows }) {
               <TableCell align="left">{row.reason}</TableCell>
               <TableCell align="left">{ccyFormat(row.amount)}</TableCell>
               <TableCell>
-                <a
-                  href="https://invoice.stripe.com/i/acct_1IS74pBMi4SK1isS/invst_J7XnRNEzTdVoy15Dsce4D6jmOCYzg2W"
-                  target="_blank"
-                >
+                <a href={row.hostedUrl} target="_blank">
                   <IconButton aria-label="goToLink" className={classes.margin} size="small">
                     <GoToIcon fontSize="inherit" />
                   </IconButton>
                 </a>
               </TableCell>
               <TableCell>
-                <a
-                  href="https://pay.stripe.com/invoice/acct_1IS74pBMi4SK1isS/invst_J7XnRNEzTdVoy15Dsce4D6jmOCYzg2W/pdf"
-                  target="_blank"
-                >
+                <a href={row.downloadUrl} target="_blank">
                   <IconButton aria-label="download" className={classes.margin} size="small">
                     <DownloadIcon fontSize="inherit" />
                   </IconButton>
